@@ -1,14 +1,21 @@
 <head>
-  <title>bf</title>
+  <title>BF Data</title>
 </head>
 
 <body>
-  <h1>Welcome to Meteor!</h1>
+  <h1>BF Analytics</h1>
 
-  {{> hello}}
+  <div class="container">
+  	<div class="row">
+  		<div class="col-xs-6 col-sm-3" id="sidebar">
+  			{{> sidebar}}
+      </div>
+
+      <div class="col-xs-12 col-sm-9">
+      	Here goes the graphics
+      </div>
+  	</div>
+  </div> 
+
+  
 </body>
-
-<template name="hello">
-  <button>Click Me</button>
-  <p>You've pressed the button {{counter}} times.</p>
-</template>
