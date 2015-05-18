@@ -4,6 +4,19 @@ if (Meteor.isClient) {
 
 if (Meteor.isServer) {
   Meteor.startup(function () {
-    // code to run on server at startup
+    
+    ////////// LOGIN ON STARTUP //////////
+
+		// var session = betfair.newSession(APP_KEY);
+		// session.login(USERNAME,PASSWORD, function(err) {
+		//   if(!err){
+		//     session._logged = true;
+		//     stats.setSession(session);
+		//   }
+		// });
+
+
+
+
   });
 }
