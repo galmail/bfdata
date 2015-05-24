@@ -11,17 +11,38 @@ Meteor.methods({
     return { bots: Meteor.settings.bf.bots };
   },
   startBot: function(index){
-		var bfBot = Meteor.settings.bf.bots[index];
-		var session = Betfair.newSession(bfBot.appKey);
-		session.login(bfBot.username,bfBot.password, function(err) {
+    var bfCredentials = Meteor.settings.bf.bots[index];
+		var bot = Betfair.newSession(bfCredentials.appKey);
+		bot.login(bfCredentials.username,bfCredentials.password, function(err){
 	    console.log(err ? "Login failed " + err : "Login OK");
-		});
-
-		return { result: "success" };
-
-  	// Soccer: EventType = 1
-  	// Get MarketCatalogueList for inPlay
-  	// Get MarketBookList for inPlay
-
+      if(err) return false;
+      // Get MarketCatalogueList for inPlay
+      // Soccer: EventType = 1
+      bot.listMarketCatalogue(
+        { maxResults: "10", filter: { eventTypeIds: ["1"], inPlayOnly: true } },
+        function(err,res){
+          if(err) return false;
+          var markets = res.response.result;
+          var marketIds = [];
+          for(var i=0;i<markets.length;i++){
+            marketIds.push(markets[i].marketId);
+          }
+          // Get MarketBookList on the result
+          bot.listMarketBook(
+            { marketIds: marketIds },
+            function(err,res){
+              if(err) return false;
+              var marketBooks = res.response.result;
+              Fiber(function(){
+                for(var j=0;j<marketBooks.length;j++){
+                  MarketBooks.insert(marketBooks[j]);
+                }
+              }).run();
+            }
+          );
+		    }
+      );
+    });
+    return { result: "success" };
   }
 });

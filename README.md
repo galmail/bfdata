@@ -3,15 +3,7 @@ BF Analytics
 
 ## Getting Started ##
 
-Add the following packages:
-
-meteor add twbs:bootstrap
-meteor add maazalik:highcharts
-meteor add fourseven:scss
-meteor add meteorhacks:npm
-meteor add iron:router
-
-Now just run: meteor
+Just clone the project and run meteor.
 
 ## Meteor Packages ##
 

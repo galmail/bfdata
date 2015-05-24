@@ -6,13 +6,25 @@
     <table class="table table-hover">
 	    <thead>
 	      <tr>
-	        <th>ID</th>
+	        <th>Market ID</th>
+	        <th>LastMatchTime</th>
+	        <th>Status</th>
+	        <th>Available</th>
+	        <th>Matched</th>
+	        <!-- <th>Runner1LastPriceTraded</th>
+	        <th>Runner2LastPriceTraded</th> -->
 	      </tr>
 	    </thead>
 	    <tbody>
 	    	{{#each logs}}
 	        <tr>
-		        <td>{{ id }}</td>
+		        <td>{{ marketId }}</td>
+		        <td>{{ lastMatchTime }}</td>
+		        <td>{{ status }}</td>
+		        <td>{{ totalAvailable }}</td>
+		        <td>{{ totalMatched }}</td>
+		        <!-- <td>{{ runners[0].lastPriceTraded }}</td>
+		        <td>{{ runners[1].lastPriceTraded }}</td> -->
 		      </tr>
 	      {{/each}}
 	    </tbody>
