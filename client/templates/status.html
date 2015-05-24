@@ -1,0 +1,33 @@
+<template name="status">
+	{{> navbar status="active"}}
+	<div class="container">
+		
+		<h2>Bots</h2>
+
+		<table class="table table-hover">
+	    <thead>
+	      <tr>
+	        <th>App ID</th>
+	        <th>App Key</th>
+	        <th>Username</th>
+	        <th>Password</th>
+	        <th>Status</th>
+	        <th>Action</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	    	{{#each bots}}
+	        <tr>
+		        <td>{{ id }}</td>
+		        <td>{{ appKey }}</td>
+		        <td>{{ username }}</td>
+		        <td>{{ password }}</td>
+		        <td>{{ status }}</td>
+		        <td><a data-botindex="{{index}}" class="bot-action" href="#">Start/Stop</a></td>
+		      </tr>
+	      {{/each}}
+	    </tbody>
+	  </table>
+
+	</div>
+</template>

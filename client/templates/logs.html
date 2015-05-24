@@ -1,0 +1,21 @@
+<template name="logs">
+  {{> navbar logs="active"}}
+	<div class="container">
+    <h2>Logs</h2>
+
+    <table class="table table-hover">
+	    <thead>
+	      <tr>
+	        <th>ID</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	    	{{#each logs}}
+	        <tr>
+		        <td>{{ id }}</td>
+		      </tr>
+	      {{/each}}
+	    </tbody>
+	  </table>
+  </div>
+</template>

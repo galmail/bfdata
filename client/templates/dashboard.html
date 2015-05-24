@@ -1,0 +1,9 @@
+<template name="dashboard">
+  {{> navbar dashboard="active"}}
+	<div class="container">
+    <div class="row">
+      <div class="col-xs-6 col-sm-3" id="sidebar">{{> sidebar}}</div>
+      <div class="col-xs-12 col-sm-9">{{> charts}}</div>
+    </div>
+  </div>
+</template>

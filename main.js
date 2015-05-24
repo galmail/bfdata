@@ -1,22 +1,25 @@
+// main.js
+
+/////// ROUTER ///////
+
+Router.route('/', function () {
+  this.render('dashboard');
+});
+
+Router.route('/status');
+Router.route('/about');
+Router.route('/logs');
+
+
+
 if (Meteor.isClient) {
   // code to run on client at startup
 }
 
 if (Meteor.isServer) {
-  Meteor.startup(function () {
-    
-    ////////// LOGIN ON STARTUP //////////
-
-		// var session = betfair.newSession(APP_KEY);
-		// session.login(USERNAME,PASSWORD, function(err) {
-		//   if(!err){
-		//     session._logged = true;
-		//     stats.setSession(session);
-		//   }
-		// });
-
-
-
-
+	// code to run on server at startup	
+  Meteor.startup(function(){
+  	Betfair = Meteor.npmRequire('betfair');
   });
 }
+
