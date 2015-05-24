@@ -1,8 +1,7 @@
+// sidebar.js
+
 Template.sidebar.helpers({
-
-	events: function() {
-		var events = Events.find({});
-		return events;
-  }
-
+	events: function(){
+		return Events.find();
+	}
 });

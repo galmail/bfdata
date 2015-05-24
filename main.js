@@ -17,13 +17,16 @@ Events = new Mongo.Collection("events");
 
 if (Meteor.isClient) {
   // code to run on client at startup
+  Bots = new Mongo.Collection("bots");
 }
 
 if (Meteor.isServer) {
-	// code to run on server at startup	
   Meteor.startup(function(){
+  	
+  	/////// SERVER-SIDE LIBRARIES ///////
   	Betfair = Meteor.npmRequire('betfair');
   	Fiber = Meteor.npmRequire('fibers');
+
   });
 }
 

@@ -1,18 +1,22 @@
-
-
-Template.status.rendered = function(){
-  if (!this.rendered){
-    // run my code
-    Meteor.call("loadBots", function(error, res) {
-      console.log("loading bots from server...");
-      if(error) console.log("error",error);
-      else {
-        Template.status.helpers({ bots: res.bots });
-      }
-    });
-    this.rendered = true;
+Template.status.helpers({
+  bots: function(){
+    return Bots.find();
   }
-};
+});
+
+// Template.status.rendered = function(){
+//   if (!this.rendered){
+//     // run my code
+//     Meteor.call("loadBots", function(error, res) {
+//       console.log("loading bots from server...");
+//       if(error) console.log("error",error);
+//       else {
+//         Template.status.helpers({ bots: res.bots });
+//       }
+//     });
+//     this.rendered = true;
+//   }
+// };
 
 
 Template.status.events({

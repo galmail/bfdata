@@ -1,9 +1,8 @@
 <template name="sidebar">
 	<div class="list-group">
     {{#each events}}
+        <span class="">{{ openDate }}</span>
         <a href="#" class="list-group-item">{{ name }}</a>
     {{/each}}
-    <!-- <a href="#" class="list-group-item active">Team A vs Team B</a>
-    <a href="#" class="list-group-item">Team B vs Team C</a> -->
   </div>
 </template>

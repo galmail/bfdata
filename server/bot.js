@@ -20,7 +20,9 @@ var collectMarketData = function(bot){
           Fiber(function(){
             var marketBooks = res.response.result;
             console.log("Saving " + marketBooks.length + " MarketBooks.");
-            MarketBooks.insert(marketBooks);
+            _.each(marketBooks, function(marketBook) {
+              MarketBooks.update({id: marketBook.id}, {"$setOnInsert": marketBook}, {upsert: true});
+            });
           }).run();
         }
       );
@@ -40,7 +42,10 @@ var collectEvents = function(bot){
       Fiber(function(){
         var events = res.response.result;
         console.log("Saving " + events.length + " Events.");
-        Events.insert(events);
+        _.each(events, function(obj) {
+          var event = obj.event;
+          Events.update({id: event.id}, {"$setOnInsert": event}, {upsert: true});
+        });
       }).run();
     }
   );
@@ -79,10 +84,6 @@ Meteor.methods({
     // this.unblock();
     // return Meteor.http.call("GET", "http://search.twitter.com/search.json?q=perkytweets");
     return { result: "success" };
-  },
-
-  loadBots: function () {
-    return { bots: Meteor.settings.bf.bots };
   },
 
   runBot: function(index){
