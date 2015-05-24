@@ -8,7 +8,7 @@ _.defaults(Meteor.settings, {
     bots: [
       {
         index: 0,
-        id: "Soccer Bot1",
+        task: "collect-market-books",
         appKey: "8GM3PavYlsoCq5Pm",
         appKeyDelay: "nY91upd309Q9zbai",
         username: "guli@tocarta.es",
@@ -16,9 +16,9 @@ _.defaults(Meteor.settings, {
       },
       {
         index: 1,
-        id: "Soccer Bot2",
-        appKey: "8GM3PavYlsoCq5Pt",
-        appKeyDelay: "nY91upd309Q9zbas",
+        task: "collect-events",
+        appKey: "KeGZIpaVaSugfWVp",
+        appKeyDelay: "WZQ2fsGLELLVHVSu",
         username: "guli2@tocarta.es",
         password: "guliguli2"
       }

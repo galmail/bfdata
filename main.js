@@ -13,6 +13,7 @@ Router.route('/logs');
 /////// COLLECTIONS ///////
 
 MarketBooks = new Mongo.Collection("marketbooks");
+Events = new Mongo.Collection("events");
 
 if (Meteor.isClient) {
   // code to run on client at startup
