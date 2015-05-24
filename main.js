@@ -19,7 +19,7 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 	// code to run on server at startup	
   Meteor.startup(function(){
-  	Betfair = Meteor.npmRequire('betfair');
+  	//Betfair = Meteor.npmRequire('betfair');
   });
 }
 
