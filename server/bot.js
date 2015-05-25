@@ -4,7 +4,7 @@
 var collectMarketData = function(bot){
   console.log("Collecting Market Data...");
   bot.listMarketCatalogue(
-    { maxResults: "10", filter: { eventTypeIds: ["1"], inPlayOnly: true } },
+    { maxResults: "200", filter: { eventTypeIds: ["1"], inPlayOnly: true } },
     function(err,res){
       if(err) return false;
       var markets = res.response.result;

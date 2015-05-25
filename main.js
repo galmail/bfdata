@@ -5,7 +5,8 @@
 Router.route('/', function () {
   var event = Events.findOne({id: this.params.query.eventId });
   Session.set('ActiveEvent',event);
-  this.render('dashboard', { data: { event: event} });
+  this.render('dashboard');
+  //this.render('dashboard', { data: { activeEvent: event} });
 });
 
 Router.route('/status');
