@@ -1,3 +1,5 @@
 <template name="charts">
-    {{> myChart}}
+	{{#each markets}}
+      {{> myChart name=marketName }}
+  {{/each}}
 </template>

@@ -2,7 +2,7 @@
 	<div class="list-group">
     {{#each events}}
         <span class="">{{ openDate }}</span>
-        <a href="#" class="list-group-item">{{ name }}</a>
+        <a href="/?eventId={{ id }}" class="list-group-item {{isActive}}">{{ name }}</a>
     {{/each}}
   </div>
 </template>

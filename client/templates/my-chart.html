@@ -1,3 +1,4 @@
 <template name="myChart">
-    {{> highchartsHelper chartId="myChart" chartWidth="100%" chartHeight="100%" chartObject=areaChart}}
+	<h3>{{ name }}</h3>
+  {{> highchartsHelper chartObject=stockChart chartId=getRandomId chartWidth="500px" chartHeight="200px"}}
 </template>

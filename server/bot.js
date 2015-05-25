@@ -39,14 +39,25 @@ var collectEvents = function(bot){
     { filter: { eventTypeIds: ["1"], marketStartTime: {from: d.toISOString()} } },
     function(err,res){
       if(err) return false;
-      Fiber(function(){
         var events = res.response.result;
         console.log("Saving " + events.length + " Events.");
         _.each(events, function(obj) {
           var event = obj.event;
-          Events.update({id: event.id}, {"$setOnInsert": event}, {upsert: true});
+          // collect market catalogue for each event
+          bot.listMarketCatalogue(
+            { filter: { eventIds: [event.id] }, maxResults: "100" },
+            function(err,res){
+              if(err){
+                console.log(err);
+                return false;
+              }
+              event.markets = res.response.result;
+              Fiber(function(){
+                Events.update({id: event.id}, {"$setOnInsert": event}, {upsert: true});
+              }).run();
+            }
+          );
         });
-      }).run();
     }
   );
 };

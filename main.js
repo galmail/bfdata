@@ -3,7 +3,9 @@
 /////// ROUTES ///////
 
 Router.route('/', function () {
-  this.render('dashboard');
+  var event = Events.findOne({id: this.params.query.eventId });
+  Session.set('ActiveEvent',event);
+  this.render('dashboard', { data: { event: event} });
 });
 
 Router.route('/status');
