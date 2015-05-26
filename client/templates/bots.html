@@ -1,5 +1,5 @@
-<template name="status">
-	{{> navbar status="active"}}
+<template name="bots">
+	{{> navbar bots="active"}}
 	<div class="container">
 		
 		<h2>Bots</h2>
@@ -23,7 +23,15 @@
 		        <td>{{ username }}</td>
 		        <td>{{ password }}</td>
 		        <td>{{ status }}</td>
-		        <td><a data-botindex="{{id}}" class="bot-action" href="#">Start/Stop</a></td>
+		        <td>
+		        	<a data-botid="{{id}}" class="bot-action" href="#">
+		        	{{#if isActive}}
+		        	Stop
+		        	{{else}}
+		        	Start
+		        	{{/if}}
+		        	</a>
+		        </td>
 		      </tr>
 	      {{/each}}
 	    </tbody>

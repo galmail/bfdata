@@ -1,6 +1,0 @@
-// api.js
-
-Meteor.methods({
-
-
-});
