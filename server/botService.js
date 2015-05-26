@@ -71,6 +71,7 @@ var collectEvents = function(bot){
 
 var stopBot = function(botConfig){
   console.log("Stoping Bot...");
+  clearInterval(RunningBots[botConfig.task]);
 };
 
 var startBot = function(botConfig){
@@ -81,7 +82,10 @@ var startBot = function(botConfig){
     if(err) return false;
     switch(botConfig.task){
       case "collect-market-books":
-          collectMarketData(bot);
+          RunningBots[botConfig.task] = setInterval(function(){
+            console.log('running bot: ' + botConfig.task);
+            collectMarketData(bot);
+          },botConfig.interval*1000);
           break;
       case "collect-events":
           collectEvents(bot);
