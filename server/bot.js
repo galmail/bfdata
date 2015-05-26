@@ -8,30 +8,33 @@ var collectMarketData = function(bot){
     function(err,res){
       if(err) return false;
       var markets = res.response.result;
-      var marketIds = [];
       for(var i=0;i<markets.length;i++){
-        marketIds.push(markets[i].marketId);
+        // Get MarketBookList on the result
+        var marketId = markets[i].marketId;
+        bot.listMarketBook(
+          { marketIds: [marketId] },
+          function(err,res){
+            if(err) return false;
+            Fiber(function(){
+              var marketBooks = res.response.result;
+              console.log("Saving " + marketBooks.length + " MarketBooks.");
+              _.each(marketBooks, function(marketBook) {
+                // manipulate date
+                marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
+                // create collection if doesnt exist
+                if(!MarketData[marketId]) MarketData[marketId] = new Mongo.Collection("marketdata-"+marketId);
+                MarketData[marketId].update({id: marketBook.id}, {"$setOnInsert": marketBook}, {upsert: true});
+                // saving just for logs..
+                //Logs.insert(marketBook);
+                Logs.update({id: marketBook.id}, {"$setOnInsert": marketBook}, {upsert: true});
+              });
+            }).run();
+          }
+        );
       }
-      // Get MarketBookList on the result
-      bot.listMarketBook(
-        { marketIds: marketIds },
-        function(err,res){
-          if(err) return false;
-          Fiber(function(){
-            var marketBooks = res.response.result;
-            console.log("Saving " + marketBooks.length + " MarketBooks.");
-            _.each(marketBooks, function(marketBook) {
-              // manipulate date
-              marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
-              MarketBooks.update({id: marketBook.id}, {"$setOnInsert": marketBook}, {upsert: true});
-            });
-          }).run();
-        }
-      );
     }
   );
 };
-
 
 var collectEvents = function(bot){
   console.log("Collecting Events...");

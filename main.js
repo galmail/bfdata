@@ -23,7 +23,7 @@ Router.route('/logs');
 
 /////// COLLECTIONS ///////
 
-MarketBooks = new Mongo.Collection("marketbooks");
+Logs = new Mongo.Collection("logs");
 Events = new Mongo.Collection("events");
 
 if (Meteor.isClient) {
@@ -33,11 +33,10 @@ if (Meteor.isClient) {
 
 if (Meteor.isServer) {
   Meteor.startup(function(){
-  	
+    MarketData = []; // array of collections
   	/////// SERVER-SIDE LIBRARIES ///////
   	Betfair = Meteor.npmRequire('betfair');
   	Fiber = Meteor.npmRequire('fibers');
-
   });
 }
 

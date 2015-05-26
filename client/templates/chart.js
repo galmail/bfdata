@@ -8,18 +8,17 @@ Template.chart.helpers({
 
   stockChart: function(){
   	var self = this;
-  	// get market data
-  	var marketBooks = MarketBooks.find({marketId: self.id});
-  	var data = [];
-  	_.each(marketBooks,function(book){
-  		if(book==null) return;
-  		var t = null;
-  		var v = null;
-  		if(book.lastMatchTime) t = new Date(book.lastMatchTime).getTime();
-  		if(book.runners && book.runners.length>0) v = book.runners[0].lastPriceTraded;
-  		data.push([t,v]);
-  	});
-  	marketBooks=null;
+    var data = [];
+    if(MarketData[self.id]!=null){
+      data = MarketData[self.id].find().map(function(book){
+        if(book==null) return;
+        var t = null;
+        var v = null;
+        if(book.lastMatchTime) t = book.lastMatchTime.getTime();
+        if(book.runners && book.runners.length>0) v = book.runners[0].lastPriceTraded;
+        return [t,v];
+      });
+    }
 
   	return {
   		chart: {
