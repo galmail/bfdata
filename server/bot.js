@@ -21,6 +21,8 @@ var collectMarketData = function(bot){
             var marketBooks = res.response.result;
             console.log("Saving " + marketBooks.length + " MarketBooks.");
             _.each(marketBooks, function(marketBook) {
+              // manipulate date
+              marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
               MarketBooks.update({id: marketBook.id}, {"$setOnInsert": marketBook}, {upsert: true});
             });
           }).run();
@@ -52,6 +54,7 @@ var collectEvents = function(bot){
                 return false;
               }
               event.markets = res.response.result;
+              event.openDate = new Date(event.openDate);
               Fiber(function(){
                 Events.update({id: event.id}, {"$setOnInsert": event}, {upsert: true});
               }).run();

@@ -9,7 +9,7 @@ Template.chart.helpers({
   stockChart: function(){
   	var self = this;
   	// get market data
-  	var marketBooks = MarketBooks.find({marketId: this.id});
+  	var marketBooks = MarketBooks.find({marketId: self.id});
   	var data = [];
   	_.each(marketBooks,function(book){
   		if(book==null) return;

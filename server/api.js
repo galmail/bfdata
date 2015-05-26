@@ -1,0 +1,6 @@
+// api.js
+
+Meteor.methods({
+
+
+});

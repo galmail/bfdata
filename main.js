@@ -3,8 +3,16 @@
 /////// ROUTES ///////
 
 Router.route('/', function () {
-  var event = Events.findOne({id: this.params.query.eventId });
-  Session.set('ActiveEvent',event);
+  var event = null;
+  if(this.params.query.eventId){
+  	event = Events.findOne({id: this.params.query.eventId });
+  }
+  else {
+  	var now = new Date();
+  	event = Events.findOne({openDate: {$gte: now}},{sort:{openDate:1}});
+  }
+  // setting the event in session
+  if(event) Session.set('ActiveEvent',event);
   this.render('dashboard');
   //this.render('dashboard', { data: { activeEvent: event} });
 });
