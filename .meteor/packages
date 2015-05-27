@@ -8,7 +8,6 @@ meteor-platform
 autopublish
 insecure
 twbs:bootstrap
-maazalik:highcharts
 fourseven:scss
 meteorhacks:npm
 

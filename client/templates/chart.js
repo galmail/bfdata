@@ -1,6 +1,54 @@
 // chart.js
 
+builtStockLocal = function(id,name){
+  var self = this;
+
+  if(!MarketData[id])
+    MarketData[id] = new Mongo.Collection("marketdata-"+id);
+
+  var data = MarketData[id].find({},{sort:{lastMatchTime:1}}).map(function(book){
+    if(book==null) return;
+    var t = null;
+    var v = null;
+    if(book.lastMatchTime) t = book.lastMatchTime.getTime();
+    if(book.runners && book.runners.length>0) v = book.runners[0].lastPriceTraded;
+    return [t,v];
+  });
+
+  var chartId = 'chart-' + id.split('.')[1];
+
+  if(data.length>0){
+    console.log('showing ' + data.length + ' data points for marketID ' + id);
+  }
+
+
+  $('#'+chartId).highcharts('StockChart', {
+    rangeSelector: {
+      selected: 1
+    },
+    title: {
+      text: name + ' (' + id + ')'
+    },
+    series: [{
+      name: 'AAPL',
+      data: data,
+      tooltip: {
+        valueDecimals: 2
+      }
+    }]
+  });
+};
+
+Template.chart.rendered = function(){
+  builtStockLocal(this.data.id,this.data.name);
+};
+
+
 Template.chart.helpers({
+
+  chartId: function(){
+    return 'chart-' + this.id.split('.')[1];
+  },
 
   getRandomId: function(){
   	return Math.random().toString(36).substring(7);
