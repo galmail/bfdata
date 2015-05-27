@@ -2,23 +2,27 @@
 
 Template.chart.helpers({
 
-	getRandomId: function(){
-		return Math.random().toString(36).substring(7);
-	},
+  getRandomId: function(){
+  	return Math.random().toString(36).substring(7);
+  },
 
   stockChart: function(){
   	var self = this;
     var data = [];
-    if(MarketData[self.id]!=null){
-      data = MarketData[self.id].find().map(function(book){
-        if(book==null) return;
-        var t = null;
-        var v = null;
-        if(book.lastMatchTime) t = book.lastMatchTime.getTime();
-        if(book.runners && book.runners.length>0) v = book.runners[0].lastPriceTraded;
-        return [t,v];
-      });
-    }
+    
+    if(!MarketData[self.id])
+      MarketData[self.id] = new Mongo.Collection("marketdata-"+self.id);
+
+    var data = MarketData[self.id].find().map(function(book){
+      if(book==null) return;
+      var t = null;
+      var v = null;
+      if(book.lastMatchTime) t = book.lastMatchTime.getTime();
+      if(book.runners && book.runners.length>0) v = book.runners[0].lastPriceTraded;
+      return [t,v];
+    });
+
+    console.log("got data of marketId=" + self.id + " with " + data.length + " data points.");
 
   	return {
   		chart: {
@@ -28,7 +32,7 @@ Template.chart.helpers({
         selected : 1
 	    },
 	    title : {
-	      text : self.name
+	      text : self.name + '(' + self.id + ')'
 	    },
 	    series : [{
 	      name : 'Runner1',

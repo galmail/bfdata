@@ -2,37 +2,58 @@
 
 var collectMarketData = function(bot){
   console.log("Collecting Market Data...");
+
+  var runBatch = function(marketIds){
+    console.log("\nRunning Batch of " + marketIds.length + ".\n");
+    bot.listMarketBook(
+      { marketIds: marketIds },
+      function(err,res){
+        if(err){
+          console.log("ERROR: ",err);
+          return false;
+        }
+        console.log("\nGot " + res.response.result.length + " market data!!!");
+        Fiber(function(){
+          var marketBooks = res.response.result;
+          console.log("Got " + marketBooks.length + " market data!!!\n");
+          _.each(marketBooks, function(marketBook) {
+            //console.log("Saving marketbook for ID=" + marketBook.marketId);
+            // manipulate date
+            marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
+            // create collection if doesnt exist
+            if(!MarketData[marketBook.marketId]){
+              MarketData[marketBook.marketId] = new Mongo.Collection("marketdata-"+marketBook.marketId);
+            }
+            MarketData[marketBook.marketId].upsert({ lastMatchTime: marketBook.lastMatchTime, marketId: marketBook.marketId },marketBook);
+            // saving just for logs..
+            //Logs.upsert({ lastMatchTime: marketBook.lastMatchTime, marketId: marketBook.marketId },marketBook);
+          });
+        }).run();
+      }
+    );
+  };
+
   bot.listMarketCatalogue(
-    { maxResults: "200", filter: { eventTypeIds: ["1"], inPlayOnly: true } },
+    { maxResults: "1000", filter: { eventTypeIds: ["1"], inPlayOnly: true } },
     function(err,res){
-      if(err) return false;
+      if(err){
+        console.log("ERROR: ",err);
+        return false;
+      }
       var markets = res.response.result;
+      console.log("\nGettting data from " + markets.length + " markets...\n");
       var marketIds = [];
       for(var i=0;i<markets.length;i++){
         marketIds.push(markets[i].marketId);
-      }
-      // Get MarketBookList on the result
-      bot.listMarketBook(
-        { marketIds: marketIds },
-        function(err,res){
-          if(err) return false;
-          Fiber(function(){
-            var marketBooks = res.response.result;
-            _.each(marketBooks, function(marketBook) {
-              console.log("Saving marketbook for ID=" + marketBook.marketId);
-              // manipulate date
-              marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
-              // create collection if doesnt exist
-              if(!MarketData[marketBook.marketId]){
-                MarketData[marketBook.marketId] = new Mongo.Collection("marketdata-"+marketBook.marketId);
-              }
-              MarketData[marketBook.marketId].upsert({ lastMatchTime: marketBook.lastMatchTime, marketId: marketBook.marketId },marketBook);
-              // saving just for logs..
-              Logs.upsert({ lastMatchTime: marketBook.lastMatchTime, marketId: marketBook.marketId },marketBook);
-            });
-          }).run();
+        if((i+1)%50==0){
+          runBatch(_.clone(marketIds));
+          marketIds = [];
         }
-      );
+      }
+      if(marketIds.length>0){
+        runBatch(_.clone(marketIds));
+        marketIds = [];
+      }
     }
   );
 };
@@ -44,7 +65,10 @@ var collectEvents = function(bot){
   bot.listEvents(
     { filter: { eventTypeIds: ["1"], marketStartTime: {from: d.toISOString()} } },
     function(err,res){
-      if(err) return false;
+      if(err){
+        console.log("ERROR: ",err);
+        return false;
+      }
       var events = res.response.result;
       console.log("Saving " + events.length + " Events.");
       _.each(events, function(obj) {
@@ -54,7 +78,7 @@ var collectEvents = function(bot){
           { filter: { eventIds: [event.id] }, maxResults: "100" },
           function(err,res){
             if(err){
-              console.log(err);
+              console.log("ERROR: ",err);
               return false;
             }
             event.markets = res.response.result;
@@ -82,6 +106,7 @@ var startBot = function(botConfig){
     if(err) return false;
     switch(botConfig.task){
       case "collect-market-books":
+          collectMarketData(bot);
           RunningBots[botConfig.task] = setInterval(function(){
             console.log('running bot: ' + botConfig.task);
             collectMarketData(bot);
@@ -118,5 +143,16 @@ Meteor.methods({
     }
     return { result: "success" };
   }
+
+  // getMarketData: function(marketId){
+  //   var res = [];
+  //   console.log('marketID:'+marketId);
+  //   if(!MarketData[marketId])
+  //     MarketData[marketId] = new Mongo.Collection("marketdata-"+marketId);
+  //     res = MarketData[marketId].find().fetch();
+  //     console.log('got total data points: '+ res.length);
+  //   }
+  //   return { data: res };
+  // }
 
 });
