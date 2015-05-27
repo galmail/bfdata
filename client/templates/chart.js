@@ -6,14 +6,14 @@ Template.chart.helpers({
   	return Math.random().toString(36).substring(7);
   },
 
-  stockChart: function(){
+  StockChart: function(){
   	var self = this;
     var data = [];
     
     if(!MarketData[self.id])
       MarketData[self.id] = new Mongo.Collection("marketdata-"+self.id);
 
-    var data = MarketData[self.id].find().map(function(book){
+    var data = MarketData[self.id].find({},{sort:{lastMatchTime:1}}).map(function(book){
       if(book==null) return;
       var t = null;
       var v = null;
@@ -32,7 +32,7 @@ Template.chart.helpers({
         selected : 1
 	    },
 	    title : {
-	      text : self.name + '(' + self.id + ')'
+	      text : self.name + ' (' + self.id + ')'
 	    },
 	    series : [{
 	      name : 'Runner1',
