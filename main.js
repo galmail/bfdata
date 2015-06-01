@@ -26,6 +26,7 @@ Router.route('/logs');
 Logs = new Mongo.Collection("logs");
 Events = new Mongo.Collection("events");
 Bots = new Mongo.Collection("bots");
+
 MarketData = []; // array of market data collections (one collection per market)
 
 if (Meteor.isClient) {
@@ -41,6 +42,21 @@ if (Meteor.isServer) {
     /////// SERVER-SIDE LIBRARIES ///////
   	Betfair = Meteor.npmRequire('betfair');
   	Fiber = Meteor.npmRequire('fibers');
+    Phantom = Meteor.npmRequire('phantom');
+
   });
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 

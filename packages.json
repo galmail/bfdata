@@ -1,4 +1,5 @@
 {
   "betfair": "0.4.2",
-  "fibers": "1.0.5"
+  "fibers": "1.0.5",
+  "phantom": "0.7.2"
 }

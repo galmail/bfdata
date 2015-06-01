@@ -4,7 +4,7 @@
       "version": "0.4.2",
       "dependencies": {
         "async": {
-          "version": "0.9.0"
+          "version": "1.0.0"
         },
         "underscore": {
           "version": "1.8.3"
@@ -16,7 +16,7 @@
           "version": "0.2.0"
         },
         "cookie": {
-          "version": "0.1.2"
+          "version": "0.1.3"
         },
         "bunyan": {
           "version": "1.3.5",
@@ -57,6 +57,58 @@
     },
     "fibers": {
       "version": "1.0.5"
+    },
+    "phantom": {
+      "version": "0.7.2",
+      "dependencies": {
+        "dnode": {
+          "version": "1.2.1",
+          "dependencies": {
+            "dnode-protocol": {
+              "version": "0.2.2"
+            },
+            "jsonify": {
+              "version": "0.0.0"
+            },
+            "weak": {
+              "version": "0.4.1",
+              "dependencies": {
+                "bindings": {
+                  "version": "1.2.1"
+                },
+                "nan": {
+                  "version": "1.8.4"
+                }
+              }
+            }
+          }
+        },
+        "shoe": {
+          "version": "0.0.15",
+          "dependencies": {
+            "sockjs": {
+              "version": "0.3.7",
+              "dependencies": {
+                "node-uuid": {
+                  "version": "1.3.3"
+                },
+                "faye-websocket": {
+                  "version": "0.4.4"
+                }
+              }
+            },
+            "sockjs-client": {
+              "version": "0.0.0-unreleasable"
+            }
+          }
+        },
+        "win-spawn": {
+          "version": "2.0.0"
+        },
+        "traverse": {
+          "version": "0.6.6"
+        }
+      }
     }
   }
 }
