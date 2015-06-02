@@ -44,7 +44,6 @@ if (Meteor.isServer) {
   	Fiber = Meteor.npmRequire('fibers');
     Phantom = Meteor.npmRequire('phantom');
     WebSocket = Meteor.npmRequire('ws');
-
   });
 
 

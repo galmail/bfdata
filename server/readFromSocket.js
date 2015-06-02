@@ -8,56 +8,33 @@ Meteor.methods({
 
     var _obj = Meteor.http.call("GET", "https://api.mongolab.com/api/1/databases/actions/collections/sockets?q={\"wsUrlPresent\": true, \"eventId\": \"" + eventId + "\" }&apiKey=wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2");
     var wsUrl = _obj.data[0].wsUrl;
-    var matchId = _obj.data[0].matchId.toString();
+    var matchId = parseInt(_obj.data[0].matchId);
 
 		console.log('opening socket..');
 	  var ws = new WebSocket(wsUrl);
+	 //  var ws = new WebSocket('ws://echo.websocket.org/', {
+		//   protocolVersion: 8, 
+		//   origin: 'http://websocket.org'
+		// });
 	  ws.on('open', function() {
 	    console.log('socket connected!!!!!!');
-	    //ws.send('hello there!');
+	    ws.send('5:::{"name":"subscribe","args":[{"Topic":"' + matchId + '","LiveUpdates":"true","OddsUpdates":"true","VideoUpdates":"true","ConditionsUpdates":"true"}]}');
 	  });
-	  ws.on('message', function(message) {
-	    console.log('received: %s', message);
+	  ws.on('close', function close() {
+		  console.log('disconnected');
+		});
+	  ws.on('message', function(msg){
+	  	console.log(msg);
+	  	if(msg.indexOf('5:::')!=0) return;
+	  	console.log('\n\n***************************\n\n');
+	  	var regexEID = msg.match(/EID.*\d+/g);
+	  	console.log('c');
+	  	if(!regexEID) return;
+	  	console.log('d');
+	  	var eventId = parseInt(regexEID[0].split(':')[1]);
+	  	console.log("eventId: " + eventId);
+	  	console.log("eventName: " + BFCodes.getEvent(eventId));
 	  });
-
-
-
-
-
-
-
-		// socket.on('connect', function(){
-		// 	console.log('Connected to Socket!');
-		// });
-		// socket.on('event', function(data){ console.log('Got Msg',data); });
-		// socket.on('disconnect', function(){ console.log('Disconnected from Socket!'); });
-
-
-		// var socket = io(wsUrl);
-		// console.log('connecting to socket: ' + wsUrl);
-		
-		// socket.emit('subscribe', JSON.stringify({"Topic": matchId,"LiveUpdates":"true","OddsUpdates":"true","VideoUpdates":"true","ConditionsUpdates":"true"}));
-		
-		// socket.on('connect',function(){
-		// 	console.log('Connected to the websocket!');
-		// });
-
-
-		// socket.on('connect', Meteor.bindEnvironment(function() {
-		//   console.log('Connected to the websocket!');
-		//   socket.on('message', Meteor.bindEnvironment(function(data) {
-		//     console.log('received msg',data);
-		//   }, function(e) {
-		//     throw e;
-		//   }));
-		//   socket.on('disconnect', Meteor.bindEnvironment(function() {
-		//     console.log('Disconnected from the websocket!');
-		//   }, function(e) {
-		//     throw e;
-		//   }));
-		// }, function(e) {
-		//   throw e;
-		// }));
 
 		return { matchId: matchId, wsUrl: wsUrl };
 
