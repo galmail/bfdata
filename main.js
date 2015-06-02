@@ -43,19 +43,9 @@ if (Meteor.isServer) {
   	Betfair = Meteor.npmRequire('betfair');
   	Fiber = Meteor.npmRequire('fibers');
     Phantom = Meteor.npmRequire('phantom');
+    WebSocket = Meteor.npmRequire('ws');
 
   });
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

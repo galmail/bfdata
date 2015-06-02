@@ -14,5 +14,4 @@ meteorhacks:npm
 
 npm-container
 iron:router
-joncursi:socket-io-client
 http

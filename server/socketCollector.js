@@ -73,6 +73,7 @@ runWsCollector = function(eventId){
   Phantom.create("--web-security=no", "--ignore-ssl-errors=yes",{},function (ph) {
 	  ph.createPage(function (page) {
 			parsePage(page,url,function(){
+				var eventId = arguments[0];
 				var frame1 = document.getElementsByClassName("player")[0];
 				frame1 = (frame1.contentWindow || frame1.contentDocument);
 				var frame2 = frame1.document.getElementById('playerFrame');
@@ -92,44 +93,41 @@ runWsCollector = function(eventId){
 						dataType: "text"
 					}).success(function(text){
 						var bitToken = text.split(':')[0].trim();
-						var murl = 'https://wab-visualisation.performgroup.com/animation/v2/index.html?token=' + validationToken + '&height=114&width=374&cssDiff=https://assets.cdnbf.net/static/datavis/bf-css/betfair1.css&version=1.15&lang=en';
-						$.ajax(murl,{
-							type: "GET",
-							dataType: "html"
-						}).success(function(htmlText){
-							var newValidationToken = htmlText.match(/window\.validationToken\s*=\s*\'.*\'/g)[0].replace(/\'/g,"").split('=')[1].trim();
-							var newSocketServerURL = htmlText.match(/window\.socketServerURL\s*=\s*\'.*\'/g)[0].replace(/\'/g,"").split('=')[1].trim();
-							
-							// building ws url
-							var socketServer = newSocketServerURL.replace('https://','wss://');
-							var baseUrl = socketServer +"/socket.io/1/websocket/";
-							var params = "?token=" + newValidationToken + "&topreferer=wab-visualisation.performgroup.com&multimatch=false";
-							var wsUrl = baseUrl + bitToken + params;
-
-							// saving data...
-							$.ajax({
-								url: "https://api.mongolab.com/api/1/databases/actions/collections/sockets?apiKey=wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2",
-							  data: JSON.stringify({
-							  	"wsUrl": wsUrl,
-							  	"wsUrlPresent": true,
-							  	"matchId": matchId,
-							  	"eventId": eventId,
-							  	"newValidationToken": newValidationToken,
-							  	"newSocketServerURL": newSocketServerURL,
-							  	"myHtml": htmlText
-							  }),
-							  type: "POST",
-							  contentType: "application/json"
-							});
-
+						// building ws url
+						var socketServer = socketServerURL.replace('https://','wss://');
+						var baseUrl = socketServer +"/socket.io/1/websocket/";
+						var params = "?token=" + validationToken + "&topreferer=wab-visualisation.performgroup.com&multimatch=false";
+						var wsUrl = baseUrl + bitToken + params;
+						// saving data...
+						$.ajax({
+							url: "https://api.mongolab.com/api/1/databases/actions/collections/sockets?apiKey=wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2",
+						  data: JSON.stringify({
+						  	"wsUrl": wsUrl,
+						  	"wsUrlPresent": true,
+						  	"matchId": matchId,
+						  	"eventId": eventId,
+						  	"validationToken": validationToken,
+						  	"socketServerUrl": socketServerURL,
+						  	"myHtml": htmlText
+						  }),
+						  type: "POST",
+						  contentType: "application/json"
 						});
+						// var murl = 'https://wab-visualisation.performgroup.com/animation/v2/index.html?token=' + validationToken + '&height=114&width=374&cssDiff=https://assets.cdnbf.net/static/datavis/bf-css/betfair1.css&version=1.15&lang=en';
+						// $.ajax(murl,{
+						// 	type: "GET",
+						// 	dataType: "html"
+						// }).success(function(htmlText){
+						// 	var newValidationToken = htmlText.match(/window\.validationToken\s*=\s*\'.*\'/g)[0].replace(/\'/g,"").split('=')[1].trim();
+						// 	var newSocketServerURL = htmlText.match(/window\.socketServerURL\s*=\s*\'.*\'/g)[0].replace(/\'/g,"").split('=')[1].trim();
+						// });
 					});
 				});
 				return frame3.src;
 			},function(res){
 				url = res;
 				console.log('got: ' + url);
-			},["arg1","arg2"],true);
+			},[eventId],true);
 	  });
 	});
 };
