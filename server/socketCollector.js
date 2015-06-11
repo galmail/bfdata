@@ -67,7 +67,7 @@ ignorePhantomErrors = function(msg, trace) {
 };
 
 runWsCollector = function(eventId){
-	var url = "https://www.betfair.com/sport/football/event?eventId=" + eventId;
+	var url = "https://www.betfair.es/sport/football/event?eventId=" + eventId;
   console.log('open: ' + url);
   //Phantom.onError = ignorePhantomErrors;
   Phantom.create("--web-security=no", "--ignore-ssl-errors=yes",{},function (ph) {
@@ -102,13 +102,13 @@ runWsCollector = function(eventId){
 						$.ajax({
 							url: "https://api.mongolab.com/api/1/databases/actions/collections/sockets?apiKey=wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2",
 						  data: JSON.stringify({
+						  	"wsDate": new Date().getTime(),
 						  	"wsUrl": wsUrl,
 						  	"wsUrlPresent": true,
 						  	"matchId": matchId,
 						  	"eventId": eventId,
 						  	"validationToken": validationToken,
-						  	"socketServerUrl": socketServerURL,
-						  	"myHtml": htmlText
+						  	"socketServerUrl": socketServerURL
 						  }),
 						  type: "POST",
 						  contentType: "application/json"
