@@ -4,7 +4,7 @@ Template.dashboard.helpers({
 
 	events: function(){
 		var dates = [];
-		return Events.find({},{limit:1000,sort:{openDate:1}}).map(function(event){
+		return Events.find({},{reactive:false,limit:100,sort:{openDate:1}}).map(function(event){
 			var day = event.openDate.getDate();
 	    var month = event.openDate.getMonth() + 1;
 	    var year = event.openDate.getFullYear();
@@ -18,7 +18,13 @@ Template.dashboard.helpers({
 	},
 
 	activeMarkets: function(){
-		return Session.get('ActiveEvent').markets;
+		var event = Session.get('ActiveEvent');
+		if(event){
+			return event.markets;
+		}
+		else {
+			return [];
+		}
 	},
 
 	activeEvent: function(){

@@ -1,9 +1,23 @@
 BF Analytics
 ============
 
-## Getting Started ##
+## Description ##
 
-Just clone the project and run meteor.
+This project is a Proof-of-Concept to showcase the following:
+
+1. Using Bots to collect real-time data from Betfair.
+2. Using Bots to collect real-time in-game events from Third-party Service.
+3. Using Charts to show and analyze all the information collected.
+4. Using Algorithms to detect market opportunities.
+5. Using Algorithms to take advantage of these opportunities.
+
+## Quick Start ##
+
+1. Download (or clone) the project.
+2. Install PhantomJS, Meteor, NodeJS and NPM Package Manager.
+3. Install Dependencies: npm install
+4. Run: meteor
+5. Open the browser: http://localhost:3000
 
 ## Meteor Packages ##
 
@@ -11,6 +25,26 @@ Just clone the project and run meteor.
 - Sass: https://atmospherejs.com/fourseven/scss
 - Npm Modules: https://atmospherejs.com/meteorhacks/npm
 - Iron Router: https://atmospherejs.com/iron/router
+
+## NPM Packages ##
+
+- Betfair
+- Fibers
+- Phantom
+- WebSocket
+
+## Technology Stack ##
+
+- MongoDB with MongoLab
+- NodeJS
+- Meteor
+- Phantom
+- WebSocket
+- HighCharts
+- Javascript,HTML,CSS/SASS
+- BootStrap
+- Amazon EC2
+
 
 To Persist Data on MongoLab
 

@@ -2,11 +2,11 @@
 
 builtStockLocal = function(id,name){
   var self = this;
-
+  
   if(!MarketData[id])
     MarketData[id] = new Mongo.Collection("marketdata-"+id);
 
-  var data = MarketData[id].find({},{sort:{lastMatchTime:1}}).map(function(book){
+  var data = MarketData[id].find({},{reactive:false,sort:{lastMatchTime:1}}).map(function(book){
     if(book==null) return;
     var t = null;
     var v = null;
@@ -19,24 +19,24 @@ builtStockLocal = function(id,name){
 
   if(data.length>0){
     console.log('showing ' + data.length + ' data points for marketID ' + id);
+    $('#'+chartId).highcharts('StockChart', {
+      rangeSelector: {
+        selected: 1
+      },
+      title: {  
+        text: name + ' (' + id + ')'
+      },
+      series: [{
+        name: 'AAPL',
+        data: data,
+        tooltip: {
+          valueDecimals: 2
+        }
+      }]
+    });
   }
 
 
-  $('#'+chartId).highcharts('StockChart', {
-    rangeSelector: {
-      selected: 1
-    },
-    title: {
-      text: name + ' (' + id + ')'
-    },
-    series: [{
-      name: 'AAPL',
-      data: data,
-      tooltip: {
-        valueDecimals: 2
-      }
-    }]
-  });
 };
 
 Template.chart.rendered = function(){
@@ -61,7 +61,7 @@ Template.chart.helpers({
     if(!MarketData[self.id])
       MarketData[self.id] = new Mongo.Collection("marketdata-"+self.id);
 
-    var data = MarketData[self.id].find({},{sort:{lastMatchTime:1}}).map(function(book){
+    var data = MarketData[self.id].find({},{reactive:false,sort:{lastMatchTime:1}}).map(function(book){
       if(book==null) return;
       var t = null;
       var v = null;

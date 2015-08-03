@@ -1,8 +1,8 @@
-// about.js
+// test.js
 
-Template.about.helpers({});
+Template.test.helpers({});
 
-Template.about.events({
+Template.test.events({
 
   "click #startWsCollection": function(){
     var eventId = $('#eventInput').val();

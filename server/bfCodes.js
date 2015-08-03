@@ -1,4 +1,4 @@
-// bfInfo.js
+// bfCodes.js
 
 function BetfairCodes(){
 	this.Events = [];
@@ -10,9 +10,3 @@ BetfairCodes.prototype.getEvent = function(id){
 };
 
 BFCodes = new BetfairCodes();
-
-/*
-
-e.ID="MatchId",e.KO="KickOff",e.HT="HomeTeam",e.HTLA="HomeTeamAbbr",e.AT="AwayTeam",e.ATLA="AwayTeamAbbr",e.EN="EventNumber",e.CPT="CurrentPlaytime",e.CR="ClockRunning",e.FORM="Form",e.SCH="ScoreHome",e.SCA="ScoreAway",e.EID="EventCodeId",e.PI="PlayerInSubstitution",e.PO="PlayerOutSubstitution",e.JI="JerseyInSubstitution",e.JO="JerseyOutSubstitution",e.Z="Zone",e.RE="RelatedEventNumber",e.AMQTS="SentToActiveMQTimestamp",e.ST="Statistics",e.TSID="TickerStateId",e.L="LeagueName",e.STA="StadiumName",e.SN="SportName",e.SI="SportId",e.TK="TeamColors";var t=[];t.O="Offside",t.AT="Attacks",t.CR="Corners",t.DAT="DangerousAttacks",t.F="Fouls",t.FK="FreeKicks",t.SH="Shots",t.SHW="ShotsWoodwork",t.YC="YellowCards",t.RC="RedCards",t.GK="GoalKick",t.TI="ThrowIn",t.SHG="ShotsOnTarget",t.SHB="ShotsOffTarget",t.SB="ShotsBlocked",t.SUB="Substitutions",t.P="Penalties"
-
-*/

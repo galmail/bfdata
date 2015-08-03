@@ -1,6 +1,6 @@
 Template.bots.helpers({
   bots: function(){
-    return Bots.find();
+    return Bots.find({},{});
   },
   isActive: function(){
     return (this.status == 'active');

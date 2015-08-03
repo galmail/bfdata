@@ -1,20 +1,6 @@
 // socketCollector.js
 
 mongo_apikey = "wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2";
-
-//mediator.subscribe("match",cb);
-// mediator.subscribe("app",function(res){
-// 	var action = {};
-// 	if(res.eventItem){
-// 		action = {
-// 			date: new Date(),
-// 			direction: res.eventItem.direction,
-// 			eventCode: res.eventItem.eventCode
-// 		};
-// 	}
-// 	console.log("action",action);
-// });
-
 myurl = "https://www.betfair.com/sport/football/event?eventId=27450734";
 jqScript = "http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js";
 
@@ -53,23 +39,9 @@ parsePage = function(page,_url,fnSelector,callback,args,includeJQuery){
 	});
 };
 
-
-ignorePhantomErrors = function(msg, trace) {
-  var msgStack = ['PHANTOM ERROR: ' + msg];
-  if (trace && trace.length) {
-    msgStack.push('TRACE:');
-    trace.forEach(function(t) {
-      msgStack.push(' -> ' + (t.file || t.sourceURL) + ': ' + t.line + (t.function ? ' (in function ' + t.function +')' : ''));
-    });
-  }
-  console.error(msgStack.join('\n'));
-  phantom.exit(1);
-};
-
 runWsCollector = function(eventId){
 	var url = "https://www.betfair.es/sport/football/event?eventId=" + eventId;
   console.log('open: ' + url);
-  //Phantom.onError = ignorePhantomErrors;
   Phantom.create("--web-security=no", "--ignore-ssl-errors=yes",{},function (ph) {
 	  ph.createPage(function (page) {
 			parsePage(page,url,function(){
