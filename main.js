@@ -40,6 +40,8 @@ Router.route('/about/actions', function(){
   this.render('about-taking-actions');
 });
 
+
+
 /////// COLLECTIONS ///////
 
 MarketData = []; // array of market data collections (one collection per market)

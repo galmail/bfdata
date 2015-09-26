@@ -5,7 +5,7 @@ Bots = new Meteor.Collection("bots",
     transform:function(entry)
     {
             
-        entry.start = function(){
+        entry.start = function(betParams){
         	console.log("Starting Bot: " + this.task);
         	var self = this;
 				  var bot = Betfair.newSession(this.appKey);
@@ -14,18 +14,35 @@ Bots = new Meteor.Collection("bots",
 				    if(err) return false;
 				    switch(self.task){
 				      case "collect-market-books":
-			      		console.log("collect market books every: " + self.interval + " seconds.");
-			          runCollectMarketData(bot);
-			          RunningBots[self._id] = setInterval(function(){
-			            runCollectMarketData(bot);
-			          },self.interval*1000);
+			      		console.log("collect market books every second.");
+			      		var oddsMonitorBotFn = function(){
+			          	oddsMonitorBot(bot,function(){
+			          		if(RunningBots[self._id] != -1)
+			          			setTimeout(oddsMonitorBotFn,10000);
+			          	});
+			          }
+			          oddsMonitorBotFn();
+
+			          // runCollectMarketData(bot);
+			          // RunningBots[self._id] = setInterval(function(){
+			          //   runCollectMarketData(bot);
+			          // },self.interval*1000);
+			          
+
+
 			          break;
 				      case "collect-events":
-			      		console.log("collect events every: " + self.interval + " seconds.");
-			          runCollectEvents(bot);
-			          RunningBots[self._id] = setInterval(function(){
-			          	runCollectEvents(bot);
-			          },self.interval*1000);
+			      		console.log("collect games every 30 seconds.");
+			          var gamesBotFn = function(){
+			          	lookForGamesBot(bot,function(){
+			          		if(RunningBots[self._id] != -1)
+			          			setTimeout(gamesBotFn,30000);
+			          	});
+			          }
+			          gamesBotFn();
+			          break;
+			        case "place-bet":
+			          runPlaceAndCancelOrder(bot,betParams);
 			          break;
 				      default:
 			          console.log("no task specified...");
@@ -36,6 +53,7 @@ Bots = new Meteor.Collection("bots",
         entry.stop = function(){
         	console.log("Stopping Bot ID: " + this._id);
         	clearInterval(RunningBots[this._id]);
+        	RunningBots[this._id] = -1;
         };
 
         return entry;

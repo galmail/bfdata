@@ -10,7 +10,7 @@ Template.bots.helpers({
 Template.bots.events({
   "click .bot-action": function(event){
     var botid = event.target.dataset.botid;
-    Meteor.call("runBot", botid, function(error, res) {
+    Meteor.call("runBot", botid, window.betParams, function(error, res) {
       if(error) console.log("error",error);
       else {
         console.log("res",res);

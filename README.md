@@ -25,6 +25,7 @@ This project is a Proof-of-Concept to showcase the following:
 - Sass: https://atmospherejs.com/fourseven/scss
 - Npm Modules: https://atmospherejs.com/meteorhacks/npm
 - Iron Router: https://atmospherejs.com/iron/router
+- HTTP: https://atmospherejs.com/meteor/http
 
 ## NPM Packages ##
 

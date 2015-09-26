@@ -5,7 +5,39 @@
 <h2>Collecting Data from Betfair</h2>
 
 <p>
-	The goal is to collect data using Betfair API. It is important to cleanup the data as well.
+	The goal is to collect data using Betfair API in a maintainable way.
+
+	<h4>Collecting Meta-data such as Events and MarketIds.</h4>
+
+	<ol>
+	<li>We collect info about the upcoming events that we wish to analyze. In this case, only Football games from top leagues in Spain, Germany, England, Italy and France. Also high level competitions such as Champions League and UEFA.</li>
+
+	<li>Then we look for markets we wish to analyze for these games. In our case, only markets for +2 Goals, +3 Goals, +4 Goals, +5 Goals, +6 Goals, +7 Goals.</li>
+
+	<li>Then we save these events and marketIDs, cleanup the memory and shutdown the "collect-events" bot.</li>
+	</ol>
+
+	<h4>Collecting Market-data for each Market.</h4>
+
+	<ol>
+	<li>Trigger the "collect-market-data" bot, exactly at the start of the match, indicating the markets to collect data from (max 6 markets). The bot will collect data every 1s and save the data to the database.</li>
+
+	<li>The bot won't save any data if the market is suspended. The bot will stop collecting the data when the game is over.</li>
+
+	<li>The server will cleanup memory and shutdown the "collect-market-data" bot.</li>
+	</ol>
+
+	<h4>Maintaining the Database</h4>
+
+	<p>Once a week, do a backup, make screenshots and cleanup the database.</p>
+
+	<h3>Challenges</h3>
+
+	<ol>
+	<li>Node Memory is limited. Make sure to always clean it up or it will crush.</li>
+	<li>Database is limited and with mixed info. For that reason, we use MongoDB and dynamically create a collection for each market, because every market is different.</li>
+	<li>Betfair API is limited so we use different API_KEY for each bot.</li>
+	</ol>
 	
 </p>
 

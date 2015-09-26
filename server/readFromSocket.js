@@ -6,23 +6,21 @@ Meteor.methods({
 
 		var wsConnectFn = function(){
 			Fiber(function(){
-				var wsUrl = "";
-				var mUrl = "https://api.mongolab.com/api/1/databases/actions/collections/sockets?q={\"wsUrlPresent\": true, \"eventId\": \"" + eventId + "\" }&s={\"wsDate\": -1}&apiKey=wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2";
-		    var _obj = Meteor.http.call("GET", mUrl);
-		    var wsUrl = _obj.data[0].wsUrl;
-		    var matchId = parseInt(_obj.data[0].matchId);
+				var wsUrl = global.wsUrl;
+				var matchId = global.matchId;
+		    if(global.ws){ global.ws.close(); }
 				console.log('opening socket: ' + wsUrl);
 				var ws = new WebSocket(wsUrl);
 				ws.on('open', function() {
 			    console.log('socket connected.');
-			    ws.send('5:::{"name":"subscribe","args":[{"Topic":"' + matchId + '","LiveUpdates":"true","OddsUpdates":"true","VideoUpdates":"true","ConditionsUpdates":"true"}]}');
+			    ws.send('42["subscribe",{"Topic":"'+ matchId +'","LiveUpdates":"true","OddsUpdates":"true","VideoUpdates":"true","ConditionsUpdates":"true"}]');
+			    global.ws = ws;
 			  });
 			  ws.on('close', function close() {
 				  console.log('socket disconnected.');
-				  wsConnectFn();
 				});
 			  ws.on('message', function(msg){
-			  	if(msg.indexOf('5:::')!=0) return;
+			  	if(msg.indexOf('42[')!=0) return;
 			  	console.log('\n\n***************************\n\n');
 			  	var regexEID = msg.match(/EID.*\d+/g);
 			  	if(!regexEID) return;
@@ -33,10 +31,24 @@ Meteor.methods({
 			}).run();
 		};
 
-		wsConnectFn();
+		var refreshSocketInterval = 20 * 1000; // 10sec
+		
+		if(global.wsInterval) Meteor.clearInterval(global.wsInterval);
+		global.wsInterval = Meteor.setInterval( function () {
+      console.log("refreshing socket...");
+			wsConnectFn();
+    }, refreshSocketInterval);
+
+    wsConnectFn();
 
 		return { matchId: matchId, wsUrl: wsUrl };
 
   }
 
 });
+
+
+
+
+
+
