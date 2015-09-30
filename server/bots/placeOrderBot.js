@@ -94,3 +94,27 @@ placeOrderBot = function(bot,betParams){
     }
   );
 };
+
+
+
+
+startPlaceOrderBot = function(bot,marketId){
+	//console.log('*** StartPlaceOrderBot Starting ***');
+	// if already started, just exit..
+
+};
+
+
+stopPlaceOrderBot = function(bot,marketId){
+	//console.log('*** StopPlaceOrderBot Starting ***');
+	// if not started, just exit..
+
+};
+
+
+
+
+
+
+
+

@@ -8,6 +8,7 @@ Bots = new Meteor.Collection("bots",
         entry.start = function(betParams){
         	console.log("Starting Bot: " + this.task);
         	var self = this;
+        	RunningBots[self._id] = 0;
 				  var bot = Betfair.newSession(this.appKey);
 				  bot.login(this.username,this.password, function(err){
 				    console.log(err ? "Login failed " + err : "Login OK");
@@ -18,7 +19,7 @@ Bots = new Meteor.Collection("bots",
 			      		var oddsMonitorBotFn = function(){
 			          	oddsMonitorBot(bot,function(){
 			          		if(RunningBots[self._id] != -1)
-			          			setTimeout(oddsMonitorBotFn,10000);
+			          			RunningBots[self._id] = setTimeout(oddsMonitorBotFn,1000);
 			          	});
 			          }
 			          oddsMonitorBotFn();
@@ -28,15 +29,13 @@ Bots = new Meteor.Collection("bots",
 			          //   runCollectMarketData(bot);
 			          // },self.interval*1000);
 			          
-
-
 			          break;
 				      case "collect-events":
 			      		console.log("collect games every 30 seconds.");
 			          var gamesBotFn = function(){
 			          	lookForGamesBot(bot,function(){
 			          		if(RunningBots[self._id] != -1)
-			          			setTimeout(gamesBotFn,30000);
+			          			RunningBots[self._id] = setTimeout(gamesBotFn,30000);
 			          	});
 			          }
 			          gamesBotFn();
@@ -53,6 +52,7 @@ Bots = new Meteor.Collection("bots",
         entry.stop = function(){
         	console.log("Stopping Bot ID: " + this._id);
         	clearInterval(RunningBots[this._id]);
+        	clearTimeout(RunningBots[this._id]);
         	RunningBots[this._id] = -1;
         };
 

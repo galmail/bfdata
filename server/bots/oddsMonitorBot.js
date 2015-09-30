@@ -11,127 +11,152 @@
 // 5. That market is "safe": totalGoals < marketGoals - 1
 
 
+__min_market_odds__ = 1.15;
+__max_spread__ = 0.03;
+__min_odd_speed__ = 20000; // 20 sec
+
+
 oddsMonitorBot = function(bot,superCallback){
-	console.log('*** oddsMonitorBot Starting ***');
+	//console.log('*** oddsMonitorBot Starting ***');
+
 	// Get the in-play markets
 	bot.listMarketCatalogue(
     {
       filter: {
     	 eventTypeIds: ["1"], 		// Soccer
     	 inPlayOnly: true,				// In-Play Only
-    	 
-       competitionIds: [
-    		
-    		////////////// International //////////////
-
-    		"2005", 							// UEFA Europa League
-    		"228",								// UEFA Champions League
-    		
-    		////////////// United Kingdom //////////////
-
-    		"31",									// Barclays Premier League
-    		"7129730",						// The Championship
-    		"35",									// League One
-    		"37",									// League Two
-
-    		////////////// Spain //////////////
-
-    		"117",								// Primera Division
-    		"119",								// Segunda Division
-
-    		////////////// Italy //////////////
-
-    		"81",									// Serie A
-    		"83",									// Serie B
-
-    		////////////// Germany //////////////
-
-    		"59",									// Bundesliga 1
-    		"61",									// Bundesliga 2
-
-    		////////////// France //////////////
-
-    		"59",									// Ligue 1
-    		"61"									// Ligue 2
-    	 ],
-       
+       eventIds: __eventIds__,
+       competitionIds: __competitionIds__,
        marketTypeCodes: ["OVER_UNDER_15","OVER_UNDER_25", "OVER_UNDER_35", "OVER_UNDER_45", "OVER_UNDER_55", "OVER_UNDER_65", "OVER_UNDER_75", "OVER_UNDER_85"]
       },
       marketProjection: ["COMPETITION", "EVENT","RUNNER_DESCRIPTION"],
-      maxResults: "100"
+      maxResults: "40",
+      sort: "MAXIMUM_TRADED"
     },
     function(err,res){
       if(err){
-        console.log("ERROR: ",err);
+        console.log("ERROR listMarketCatalogue: ",err);
         return false;
       }
       var markets = res.response.result;
       var marketIds = _.map(markets,function(market){ return market.marketId; });
+
+      //console.log("num markets: "+marketIds.length);
       
       bot.listMarketBook(
 	      {
 	      	marketIds: marketIds,
-	      	priceProjection: {priceData: ["SP_AVAILABLE", "SP_TRADED", "EX_BEST_OFFERS", "EX_ALL_OFFERS", "EX_TRADED"]}
+	      	priceProjection: {priceData: ["EX_BEST_OFFERS"]}
 	      },
 	      function(err,res){
 	        if(err){
-	          console.log("ERROR: ",err);
+	          console.log("ERROR listMarketBook: ",err);
 	          return false;
 	        }
 	        var marketBooks = res.response.result;
+	        var _marketsToFinish = marketBooks.length;
+	        var done = function(){
+	        	_marketsToFinish--;
+	        	if(_marketsToFinish<=0){
+	        		//console.log('*** oddsMonitorBot Finished ***');
+	        		if(superCallback) superCallback();
+	        		return true;
+	        	}
+	        	return false;
+	        };
+
+	        if(marketBooks.length == 0) return done();
+
+	        var marketIsCold = function(marketId){
+						//console.log("Market " + marketId + " is cold!!!");
+						Fiber(function(){
+							Markets.upsert({marketId: marketId}, {$set: {
+								hot: false,
+								offTarget: new Date()
+							}});
+							stopPlaceOrderBot(bot,marketId);
+							stopLiveEventsMonitorBot(bot,marketId);
+						}).run();
+						return done();
+					};
+
 	        _.each(marketBooks,function(marketBook){
-		        // check that the odds to "back" under x goals is less than 1.10
-		        if(marketBook.status != "CLOSED" && marketBook.runners[0].lastPriceTraded <= 1.10 && marketBook.runners[0].lastPriceTraded > 1.01){
-		        	// check that the spread is small: |back-lay|=0.01
-		        	var toBack = null; var toLay = null;
-		        	var toBackVol = null; var toLayVol = null;
-		        	var lastPriceTraded = marketBook.runners[0].lastPriceTraded;
-		        	if(marketBook.runners[0].ex.availableToBack[0]!=null){
-		        		toBack = marketBook.runners[0].ex.availableToBack[0].price;
-		        		toBackVol = marketBook.runners[0].ex.availableToBack[0].size;
+		        Fiber(function(){
+
+		        	var mymarket = Markets.findOne({marketId: marketBook.marketId});
+		        	//console.log("Market: " + mymarket.marketName);
+
+			        if(marketBook.status == "CLOSED" || marketBook.status == "SUSPENDED"){
+			        	//console.log("The market is closed!");
+			        	return marketIsCold(marketBook.marketId);
+			        }
+			        
+			        var lastPriceTraded = marketBook.runners[0].lastPriceTraded;
+			        //console.log("LastPriceTraded: " + lastPriceTraded);
+
+			        if(lastPriceTraded > __min_market_odds__){
+			        	//console.log("The market odds are greater than " + __min_market_odds__);
+			        	return marketIsCold(marketBook.marketId);
+			        }
+		        	
+		        	if(marketBook.runners[0].ex.availableToBack[0]==null || marketBook.runners[0].ex.availableToBack[0].price==null){
+		        		//console.log("The market cannot be backed.");
+		        		return marketIsCold(marketBook.marketId);
 		        	}
-		        	if(marketBook.runners[0].ex.availableToLay[0]!=null){
-		        		toLay = marketBook.runners[0].ex.availableToLay[0].price;
-		        		toLayVol = marketBook.runners[0].ex.availableToLay[0].size;
+	        		
+	        		var toBack = marketBook.runners[0].ex.availableToBack[0].price;
+	        		console.log(mymarket.marketName + ": ToBack=" + toBack);
+
+		        	if(marketBook.runners[0].ex.availableToLay[0]==null || marketBook.runners[0].ex.availableToLay[0].price==null){
+		        		//console.log("The market cannot be layed.");
+		        		return marketIsCold(marketBook.marketId);
 		        	}
-		        	if(toBack!=null && toLay!=null && Math.abs(toBack-toLay)==0.01){
-		        		// check that the available volume on back or lay is more than 200 pounds.
-		        		if(toBackVol!=null && toLayVol!=null && (toBackVol>200 || toLayVol>200)){
-		        			Fiber(function(){
-			        			var mymarket = Markets.findOne({id: marketBook.marketId});
-			        			if(mymarket.lastPrice == null){
-			        				// save price and time
-						          Markets.upsert({id: mymarket.marketId}, {$set: {lastPrice: lastPriceTraded, lastTime: new Date()}});
-			        			}
-			        			else {
-			        				if(lastPriceTraded < mymarket.lastPrice){
-			        					var newOddSpeed = new Date() - mymarket.lastTime;
-			        					if(mymarket.oddSpeed != null && newOddSpeed <= mymarket.oddSpeed+1000 && newOddSpeed < 8000){
-
-
-
-			        						///////// ACTIVATE BETTING BOT AND MONITOR LIVE EVENTS IT'S MONEY TIME //////////
-
-
-
-			        					}
-			        					else {
-			        						// save it
-				        					Markets.upsert({id: mymarket.marketId}, {$set: {
-				        						lastPrice: lastPriceTraded,
-				        						lastTime: new Date(),
-				        						oddSpeed: newOddSpeed
-				        					}});
-			        					}
-			        				}
-			        			}
-		        			}).run();
-		        		}
+	        		
+	        		var toLay = marketBook.runners[0].ex.availableToLay[0].price;
+	        		console.log(mymarket.marketName + ": ToLay=" + toLay);
+		        	
+		        	if(Math.abs(toBack-toLay) >= __max_spread__){
+		        		//console.log("Market Spread is too much: " + Math.abs(toBack-toLay));
+		        		return marketIsCold(marketBook.marketId);
 		        	}
-		        }
+		        	
+        			if(mymarket.lastPrice == null){
+        				// save price and time
+        				//console.log("..saving lastPrice = " + lastPriceTraded);
+			          Markets.upsert({marketId: mymarket.marketId}, {$set: {lastPrice: lastPriceTraded, lastTime: new Date()}});
+			          return marketIsCold(marketBook.marketId);
+        			}
+        			
+      				console.log(mymarket.marketName + " last price: " + mymarket.lastPrice);
+
+      				if(lastPriceTraded < mymarket.lastPrice){
+      					var newOddSpeed = new Date() - mymarket.lastTime;
+    						// save it
+    						console.log(mymarket.marketName + "..saving newOddSpeed = " + newOddSpeed + " , lastPrice = " + lastPriceTraded);
+      					Markets.upsert({marketId: mymarket.marketId}, {$set: {
+      						lastPrice: lastPriceTraded,
+      						lastTime: new Date(),
+      						oddSpeed: newOddSpeed
+      					}});
+
+        				if(newOddSpeed > __min_odd_speed__){
+        					return marketIsCold(mymarket.marketId);
+      					}
+    						console.log(mymarket.marketName + " is hot!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    						// save it
+      					Markets.upsert({marketId: mymarket.marketId}, {$set: {
+      						hot: true,
+      						onTarget: new Date()
+      					}});
+      					///////// IT'S SHOW TIME //////////
+      					startPlaceOrderBot(bot,mymarket.marketId);
+      					startLiveEventsMonitorBot(bot,mymarket.marketId);
+      				}
+
+      				return done();
+        			
+		        }).run();
 	        });
-					console.log('*** oddsMonitorBot Finished ***');
-					if(superCallback) superCallback();
 	      }
 	    );
     }

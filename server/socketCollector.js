@@ -1,6 +1,6 @@
 // socketCollector.js
 
-mongo_apikey = "wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2";
+//mongo_apikey = "wGtHOle0k7O745R7Z_7Emzr0bNGcDIb2";
 //myurl = "https://www.betfair.com/sport/football/event?eventId=27450734";
 jqScript = "http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js";
 
@@ -83,8 +83,6 @@ runWsCollector = function(eventId,callback){
 							var params = "&topreferer=wab-visualisation.performgroup.com&referer=https%3A%2F%2Fwab-visualisation.performgroup.com%2Fcsb%2Findex.html&width=334&height=190&cssdiff=https%3A%2F%2Fassets.cdnbf.net%2Fstatic%2Fdatavis%2Fbf-css%2Fbetfair1.css&flash=y&streamonly=true&partnerId=7&statsswitch=false&lang=en&defaultview=viz&version=1.19&multimatch=false&EIO=3&transport=websocket";
 							var wsUrl = socketServerURL + '/socket.io/?token=' + validationToken + params;
 							console.log('wsUrl = ' + wsUrl);
-							global.matchId = matchId;
-							global.wsUrl = wsUrl;
 							// Save wsUrl of this event.
 							Fiber(function(){
 			          Events.upsert({id: eventId}, {$set: {wsUrl: wsUrl, matchId: matchId}});
