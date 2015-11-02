@@ -13,7 +13,7 @@
 
 __min_market_odds__ = 1.15;
 __max_spread__ = 0.03;
-__min_odd_speed__ = 20000; // 20 sec
+__min_odd_speed__ = 60000; // 60 sec just for testing...
 
 
 oddsMonitorBot = function(bot,superCallback){
@@ -74,7 +74,7 @@ oddsMonitorBot = function(bot,superCallback){
 								hot: false,
 								offTarget: new Date()
 							}});
-							stopPlaceOrderBot(bot,marketId);
+							//stopPlaceOrderBot(bot,marketId);
 							stopLiveEventsMonitorBot(bot,marketId);
 						}).run();
 						return done();
@@ -90,6 +90,19 @@ oddsMonitorBot = function(bot,superCallback){
 			        	//console.log("The market is closed!");
 			        	return marketIsCold(marketBook.marketId);
 			        }
+
+			        if(mymarket.isNotSafe){
+    						return marketIsCold(marketBook.marketId);
+    					}
+
+    					// JUST FOR TESTING, REMOVE THIS!!!
+    					// if(!mymarket.liveEventsMonitor){
+    					// 	startLiveEventsMonitorBot(bot,mymarket.marketId);
+    					// }
+    					// else {
+    					// 	return marketIsCold(marketBook.marketId);
+    					// }
+
 			        
 			        var lastPriceTraded = marketBook.runners[0].lastPriceTraded;
 			        //console.log("LastPriceTraded: " + lastPriceTraded);
@@ -129,32 +142,61 @@ oddsMonitorBot = function(bot,superCallback){
         			
       				console.log(mymarket.marketName + " last price: " + mymarket.lastPrice);
 
-      				if(lastPriceTraded < mymarket.lastPrice){
-      					var newOddSpeed = new Date() - mymarket.lastTime;
-    						// save it
-    						console.log(mymarket.marketName + "..saving newOddSpeed = " + newOddSpeed + " , lastPrice = " + lastPriceTraded);
-      					Markets.upsert({marketId: mymarket.marketId}, {$set: {
-      						lastPrice: lastPriceTraded,
-      						lastTime: new Date(),
-      						oddSpeed: newOddSpeed
-      					}});
-
-        				if(newOddSpeed > __min_odd_speed__){
-        					return marketIsCold(mymarket.marketId);
-      					}
-    						console.log(mymarket.marketName + " is hot!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    						// save it
-      					Markets.upsert({marketId: mymarket.marketId}, {$set: {
-      						hot: true,
-      						onTarget: new Date()
-      					}});
-      					///////// IT'S SHOW TIME //////////
-      					startPlaceOrderBot(bot,mymarket.marketId);
-      					startLiveEventsMonitorBot(bot,mymarket.marketId);
+      				if(lastPriceTraded >= mymarket.lastPrice){
+      					return done();
       				}
+      					
+    					var newOddSpeed = new Date() - mymarket.lastTime;
+  						// save it
+  						console.log(mymarket.marketName + "..saving newOddSpeed = " + newOddSpeed + " , lastPrice = " + lastPriceTraded);
+    					Markets.upsert({marketId: mymarket.marketId}, {$set: {
+    						lastPrice: lastPriceTraded,
+    						lastTime: new Date(),
+    						oddSpeed: newOddSpeed
+    					}});
 
-      				return done();
-        			
+    					if(newOddSpeed > __min_odd_speed__){
+      					return marketIsCold(mymarket.marketId);
+    					}
+
+    					if(mymarket.liveEventsMonitor || mymarket.hot){
+      					return done();
+    					}
+
+    					// the market is hot now... let's make sure the market is safe.
+    					var eventUrl = "https://www.betfair.com/sport/football/event?eventId=" + mymarket.event.id;
+    					Meteor.http.get(eventUrl, function (error, result) {
+					      if(error || result.statusCode != 200) {
+					        console.log('http eventUrl get FAILED!');
+					        return done();
+					      }
+				      	try {
+				      		var htmlText = result.content;
+					      	var homeScore = document.getElementsByClassName("home-score ui-score-home")[0].innerHTML;
+					      	var awayScore = document.getElementsByClassName("away-score ui-score-away")[0].innerHTML;
+					      	var totalGoals = parseInt(homeScore)+parseInt(awayScore);
+					      	var marketGoals = parseFloat(mymarket.marketName.split(" ")[1]);
+					      	if(totalGoals+1 > marketGoals){
+					      		// market is not safe!
+					      		Markets.upsert({marketId: mymarket.marketId}, {$set: { isNotSafe: true }});
+					      		return marketIsCold(mymarket.marketId);
+					      	}
+					      	console.log(mymarket.marketName + " is hot!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	    						// save it
+	      					Markets.upsert({marketId: mymarket.marketId}, {$set: {
+	      						hot: true,
+	      						onTarget: new Date()
+	      					}});
+	      					///////// IT'S SHOW TIME //////////
+	      					startPlaceOrderBot(bot,mymarket.marketId);
+	      					startLiveEventsMonitorBot(bot,mymarket.marketId);
+	      					return done();
+				      	}
+				      	catch(ex){
+				      		return done();
+				      	}
+					    });
+      				
 		        }).run();
 	        });
 	      }

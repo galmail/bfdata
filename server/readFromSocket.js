@@ -8,6 +8,9 @@ monitorLiveEventsBot = function (myevent,stop,callback){
 	if(stop){
 		if(global.intervalWS[myevent.id]) Meteor.clearInterval(global.intervalWS[myevent.id]);
 		if(global.openedWS[myevent.id]) global.openedWS[myevent.id].close();
+		// clear memory
+		global.openedWS[myevent.id] = null;
+		global.intervalWS[myevent.id] = null;
 		return;
 	}
 
@@ -37,7 +40,7 @@ monitorLiveEventsBot = function (myevent,stop,callback){
 		  	console.log("eventId: " + eventId);
 		  	var eventName = BFCodes.getEvent(eventId);
 		  	console.log("eventName: " + eventName);
-		  	if(callback) callback(eventName);
+		  	if(callback) callback(eventName,eventId);
 		  });
 		}).run();
 	};

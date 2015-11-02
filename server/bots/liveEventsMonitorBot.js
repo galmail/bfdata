@@ -14,14 +14,33 @@ startLiveEventsMonitorBot = function(bot,marketId){
 		console.log('*** StartLiveEventsMonitorBot Starting ***');
 		Markets.upsert({marketId: marketId}, {$set: {liveEventsMonitor: true}});
 		var myevent = Events.findOne({id: mymarket.event.id});
+		console.log("myevent: ",myevent);
 		if(myevent.wsUrl==null){
 			console.log('cannot monitor live events... wsUrl not found!');
 			console.log('*** StartLiveEventsMonitorBot Finished ***');
 			return;
 		}
-		monitorLiveEventsBot(myevent,false,function(action){
+		monitorLiveEventsBot(myevent,false,function(action,actionId){
 			console.log("action: " + action);
-			//if(action == "Throw-In"){ ... }
+			if(actionId == 1029 || actionId == 1030 || actionId == 2053 || actionId == 2054){
+				// TODO there has been a goal or it has been canceled...
+			}
+			if(actionId == 1051 || actionId == 2075){
+				// Safe home/away
+				// TODO It is safe to bet...
+			}
+			if(actionId == 1053 || actionId == 2077){
+				// Goal Kick home/away
+				// TODO It is safe to bet...
+			}
+			if(actionId == 1055 || actionId == 2079){
+				// Substitutions home/away
+				// TODO It is safe to bet...
+			}
+			if(actionId == 132){
+				// Injury Break
+				// TODO It is safe to bet...
+			}
 		});
 		console.log('*** StartLiveEventsMonitorBot Finished ***');
 	}).run();
