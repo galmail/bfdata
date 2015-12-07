@@ -24,6 +24,7 @@ Router.route('/dashboard', function(){
 Router.route('/bots');
 Router.route('/test');
 Router.route('/logs');
+Router.route('/run');
 
 // About Routes
 Router.route('/about');

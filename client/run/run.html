@@ -1,0 +1,82 @@
+<template name="run">
+	{{> navbar run="active"}}
+	<div class="container run">
+
+		<h2>Manual Run</h2>
+		
+		<div>
+			<label>Event Id:</label>
+			<input type="text" id="eventId"/>
+			<label>Market Id:</label>
+			<input type="text" id="marketId"/>
+			<button type="button" class="btn btn-primary" id="loadWsBtn">Load WS</button>
+			<button type="button" class="btn btn-primary" id="startBtn">Start</button>
+			<label>Last Price: {{lastPriceMatched}} - Min Price: {{minPriceMatched}}</label>
+		</div>
+		
+		<table class="signals-table table table-bordered table-hover">
+			<thead>
+			<tr>
+				<th>Label</th>
+				<th>Current</th>
+				<th>Signal</th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr class="{{safeGameSignal}}">
+				<td>Game Action</td>
+				<td>{{action}}</td>
+				<td>No goal in the next 3sec</td>
+			</tr>
+			<tr class="{{priceDropSignal}}">
+				<td>Last Price Drop</td>
+				<td>{{lastPriceDrop}}sec ago</td>
+				<td>less than 3sec</td>
+			</tr>
+			<tr class="{{priceBounceSignal}}">
+				<td>Last Price Bounce Back</td>
+				<td>{{lastPriceBounce}}sec ago</td>
+				<td>less than 2sec</td>
+			</tr>
+			<tr class="{{spreadSignal}}">
+				<td>Spread</td>
+				<td>{{spread}} points</td>
+				<td>less than 2 points</td>
+			</tr>
+			</tbody>
+		</table>
+
+		<h3>Trades</h3>
+
+		<table class="table table-bordered table-hover">
+			<thead>
+			<tr>
+				<th>Time</th>
+				<th>Action</th>
+				<th>Price</th>
+				<th>Available</th>
+				<th>Amount</th>
+			</tr>
+			</thead>
+			<tbody>
+			<tr>
+				<td>timestamp</td>
+				<td>Back</td>
+				<td>1.06</td>
+				<td>2500</td>
+				<td>100</td>
+			</tr>
+			<tr>
+				<td>timestamp</td>
+				<td>Lay</td>
+				<td>1.05</td>
+				<td>1000</td>
+				<td>100</td>
+			</tr>
+			</tbody>
+		</table>
+
+
+
+	</div>
+</template>

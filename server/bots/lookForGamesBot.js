@@ -9,7 +9,7 @@
 // 3. The game can be monitored using the LiveEventsBot (it has a live socket)
 //
 
-__eventIds__ = ["27548652"];
+__eventIds__ = [];
 
 __competitionIds__ = [];
 
