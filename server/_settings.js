@@ -6,7 +6,15 @@ _.defaults(Meteor.settings, {
   
   // betfair settings
   bf: {
-    
+    testBot: {
+      appKey: "8GM3PavYlsoCq5Pm",
+      username: "guli@tocarta.es",
+      password: "guliguli1"
+    },
+    signals: {
+      minPriceToTrade: 1.18,
+      priceDropSpeedSignal: 8000 //min price should drop fast, less than 8sec. 
+    }
   },
   
   // twitter settings

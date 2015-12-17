@@ -69,7 +69,24 @@ if (Meteor.isServer) {
     Phantom = Meteor.npmRequire('phantom');
     WebSocket = Meteor.npmRequire('ws');
 
+    loadTestBot = function(callback){
+      TestBot = Betfair.newSession(Meteor.settings.bf.testBot.appKey);
+      TestBot.login(Meteor.settings.bf.testBot.username,Meteor.settings.bf.testBot.password, function(err){
+        if(err){
+          console.log("TestBot not logged!");
+          if(callback) callback(false);
+        }
+        else {
+          console.log("TestBot is Ready!");
+          if(callback) callback(true);
+        }
+      });
+    };
+
+    loadTestBot();
+
   });
+
 
 }
 

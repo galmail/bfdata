@@ -44,7 +44,7 @@ parsePage = function(page,_url,fnSelector,callback,args,includeJQuery){
 };
 
 runWsCollector = function(eventId,callback){
-	var url = "https://www.betfair.com/sport/football/event?eventId=" + eventId;
+	var url = "https://www.betfair.com/sport/football/event?eventId=" + eventId + "&action=openDataVisualization&modules=matchheader-new&action=openDataVisualization&sportId=1";
 	var wsURL = null;
   console.log('open: ' + url);
   Phantom.create("--web-security=no", "--ignore-ssl-errors=yes",{},function (ph) {
@@ -86,7 +86,7 @@ runWsCollector = function(eventId,callback){
 							// Save wsUrl of this event.
 							Fiber(function(){
 			          Events.upsert({id: eventId}, {$set: {wsUrl: wsUrl, matchId: matchId}});
-			          if(callback) callback();
+			          if(callback) callback(wsUrl);
 			        }).run();
 			      }
 			    });
@@ -95,14 +95,4 @@ runWsCollector = function(eventId,callback){
 	  });
 	});
 };
-
-
-Meteor.methods({
-
-	startWsCollection: function(eventId){
-		runWsCollector(eventId);
-		return { res: "success" };
-	}
-
-});
 

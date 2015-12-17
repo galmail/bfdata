@@ -12,6 +12,15 @@
 
 /***********
 
+From Decimal to Fraction, just remove 1.
+From Fraction to Decimal, just add 1.
+
+If x is decimal then: x-1
+
+x = 1.05
+y = 21
+
+
 To Get Profit: 1/x + 1/y < 1
 
 To dutch: (100-((100*x)/(x+y)))*(M/100) where M is the money stake in total

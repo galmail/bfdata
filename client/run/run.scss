@@ -1,5 +1,25 @@
 .run {
 
+	.match-select {
+		width: 30%;
+		display: inline-block;
+	}
+
+	.match-label {
+		margin-right: 5px;
+	}
+
+	.markets-label {
+		margin-right: 10px;
+    margin-left: 10px;
+	}
+
+	.radio-inline {
+		border: 1px solid;
+    padding: 5px 30px;
+    border-radius: 5px;
+	}
+
 	.signals-table {
     margin-top: 20px;
     th {

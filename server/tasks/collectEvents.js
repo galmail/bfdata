@@ -8,8 +8,17 @@ runCollectEvents = function(bot){
     { filter: { eventTypeIds: ["1"], marketStartTime: {from: d.toISOString()} } },
     function(err,res){
       if(err){
-        console.log("ERROR: ",err);
-        return false;
+        if(err.code=="-32099"){
+          // log in again
+          loadTestBot(function(logged){
+            if(logged) runCollectEvents(bot);
+          });
+          return true;
+        }
+        else {
+          console.log("ERROR: ",err);
+          return false;
+        }
       }
       var events = res.response.result;
       console.log("Saving " + events.length + " Events.");
@@ -25,8 +34,20 @@ runCollectEvents = function(bot){
             }
             event.markets = res.response.result;
             event.openDate = new Date(event.openDate);
+            event._id = event.id;
             Fiber(function(){
-              Events.upsert({id: event.id}, event);
+              Events.upsert({_id: event.id},
+              {
+                $set: {
+                  _id: event.id,
+                  id: event.id,
+                  name: event.name,
+                  openDate: event.openDate,
+                  markets: event.markets,
+                  countryCode: event.countryCode,
+                  timezone: event.timezone
+                }
+              });
             }).run();
           }
         );

@@ -48,6 +48,11 @@ monitorLiveEventsBot = function (myevent,stop){
 		  			if(safeActions.indexOf(actionId)>=0){
 		  				safeGame = true;
 		  			}
+
+		  			// if there is a goal, update event total goals.
+		  			if(actionId==1029 || actionId==1030 || actionId==2053 || actionId==2054){
+		  				updateEventScore(myevent.id);
+		  			}
 		  			Events.update({id: myevent.id},{$set: {actionId: actionId, actionName: actionName, safeGame: safeGame}});
 		  		}
 		  	}).run();
@@ -68,28 +73,4 @@ monitorLiveEventsBot = function (myevent,stop){
 	return true;
 
 }
-
-
-
-
-Meteor.methods({
-
-	readFromSocket: function(eventId){
-		Fiber(function(){
-			var myevent = Events.findOne({id: eventId});
-			if(myevent==null){
-				console.log("could not find the event");
-				return false;
-			}
-			if(myevent.wsUrl==null){
-				console.log("could not find the events websocket");
-				return false;
-			}
-			monitorLiveEventsBot(myevent);
-		}).run();
-		return { res: "success" };
-	}
-
-});
-
 

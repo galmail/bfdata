@@ -2,16 +2,32 @@
 	{{> navbar run="active"}}
 	<div class="container run">
 
-		<h2>Manual Run</h2>
+		<h2>Manual Run {{loading}} => Match Score: {{matchScore}}</h2>
 		
 		<div>
-			<label>Event Id:</label>
-			<input type="text" id="eventId"/>
-			<label>Market Id:</label>
-			<input type="text" id="marketId"/>
-			<button type="button" class="btn btn-primary" id="loadWsBtn">Load WS</button>
+
+			<label class="match-label">Match:</label>
+			<select class="form-control match-select" id="matchSelect">
+				<option value="">----------</option>
+				{{#each inPlayMatches}}
+			    <option value="{{id}}">{{name}}</option>
+			  {{/each}}
+			</select>
+
+			<label class="markets-label">Markets:</label>
+
+			<label class="radio-inline"><input id="1.5" class="marketOption" type="radio" name="optradio">1.5</label>
+			<label class="radio-inline"><input id="2.5" class="marketOption" type="radio" name="optradio">2.5</label>
+			<label class="radio-inline"><input id="3.5" class="marketOption" type="radio" name="optradio">3.5</label>
+			<label class="radio-inline"><input id="4.5" class="marketOption" type="radio" name="optradio">4.5</label>
+			<label class="radio-inline"><input id="5.5" class="marketOption" type="radio" name="optradio">5.5</label>
+			<label class="radio-inline"><input id="6.5" class="marketOption" type="radio" name="optradio">6.5</label>
+			<label class="radio-inline"><input id="7.5" class="marketOption" type="radio" name="optradio">7.5</label>
+
+			<!-- <button type="button" class="btn btn-primary" id="loadWsBtn">Load WS</button>
 			<button type="button" class="btn btn-primary" id="startBtn">Start</button>
-			<label>Last Price: {{lastPriceMatched}} - Min Price: {{minPriceMatched}}</label>
+			<label>Last Price: {{lastPriceMatched}} - Min Price: {{minPriceMatched}}</label> -->
+
 		</div>
 		
 		<table class="signals-table table table-bordered table-hover">
@@ -28,21 +44,47 @@
 				<td>{{action}}</td>
 				<td>No goal in the next 3sec</td>
 			</tr>
-			<tr class="{{priceDropSignal}}">
+			<tr class="{{priceSignal}}">
+				<td>Last Price Traded</td>
+				<td>{{currentMarket.lastPriceTraded}}</td>
+				<td>Between 1.02 and 1.18</td>
+			</tr>
+
+			<tr class="{{lastTimeMinPriceSignal}}">
+				<td>MinPrice Recent</td>
+				<td>{{currentMarket.minPriceTraded}} - {{lastTimeMinPriceTraded}}sec ago</td>
+				<td>MinPrice traded in the last 3sec</td>
+			</tr>
+
+			<tr class="{{priceOscillationSignal}}">
+				<td>Price Oscillation</td>
+				<td>{{currentMarket.numPriceChanges}} changes</td>
+				<td>Price changed 2+ times in the last 2sec.</td>
+			</tr>
+
+			<tr class="{{maxSpreadSignal}}">
+				<td>Max Spread</td>
+				<td>Actual Spread: {{currentMarket.actualSpread}}</td>
+				<td>must be the minimum: 0.01</td>
+			</tr>
+
+			<tr class="info">
+				<td>Best Back/Lay Available</td>
+				<td>Back: {{currentMarket.bestToBack}} Lay: {{currentMarket.bestToLay}}</td>
+				<td>show the best available</td>
+			</tr>
+
+			<!-- <tr class="{{priceDropSignal}}">
 				<td>Last Price Drop</td>
-				<td>{{lastPriceDrop}}sec ago</td>
-				<td>less than 3sec</td>
+				<td>Min Price: {{currentMarket.minPriceTraded}} - {{minPriceSince}}sec ago - Delta: {{minPriceDelta}}sec</td>
+				<td>Less than 8sec</td>
 			</tr>
 			<tr class="{{priceBounceSignal}}">
 				<td>Last Price Bounce Back</td>
 				<td>{{lastPriceBounce}}sec ago</td>
 				<td>less than 2sec</td>
-			</tr>
-			<tr class="{{spreadSignal}}">
-				<td>Spread</td>
-				<td>{{spread}} points</td>
-				<td>less than 2 points</td>
-			</tr>
+			</tr> -->
+
 			</tbody>
 		</table>
 
@@ -52,27 +94,20 @@
 			<thead>
 			<tr>
 				<th>Time</th>
-				<th>Action</th>
-				<th>Price</th>
-				<th>Available</th>
-				<th>Amount</th>
+				<th>MarketId</th>
+				<th>Max/Min Prices Traded</th>
+				<th>Entry/Exit Point Prices</th>
 			</tr>
 			</thead>
 			<tbody>
-			<tr>
-				<td>timestamp</td>
-				<td>Back</td>
-				<td>1.06</td>
-				<td>2500</td>
-				<td>100</td>
-			</tr>
-			<tr>
-				<td>timestamp</td>
-				<td>Lay</td>
-				<td>1.05</td>
-				<td>1000</td>
-				<td>100</td>
-			</tr>
+			{{#each trade}}
+				<tr class="{{result}}">
+					<td>{{tradingStartTime}}</td>
+					<td>{{marketId}}</td>
+					<td>{{maxPriceTraded}} / {{minPriceTraded}}</td>
+					<td>{{tradingStrategy.entryPoint.price}} / {{tradingStrategy.exitPoint.price}}</td>
+				</tr>
+      {{/each}}
 			</tbody>
 		</table>
 
