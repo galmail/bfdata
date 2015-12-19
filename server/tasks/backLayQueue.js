@@ -113,6 +113,8 @@ BackLayQueue = {
       console.log("Aborting OpenTrade @"+marketId+", backOrder/layOrder dont have entry/exit price.");
       console.log("entryPrice: " + trade.entryPrice + " exitPrice: " + trade.exitPrice);
       console.log("batchOrders: " + lastOrders.join("\n"));
+      Trades.update({_id: tradeId},{$set: { status: "NextOrder Missed Entry/Exit Price", result: "neutral", tradingEndTime: new Date() }});
+      Markets.update({_id: marketId},{ $set: { tradingInProgress: false, tradingEndTime: new Date() } });
       return;
     }
     else {
@@ -122,6 +124,10 @@ BackLayQueue = {
       BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(layOrder), 1);
       BackLayQueue.placedOrders.splice(0, 0, backOrder);
       BackLayQueue.placedOrders.splice(0, 0, layOrder);
+      Trades.update({_id: tradeId},{$set: { status: "Trade Started", result: null, tradingStartTime: new Date() }});
+      Markets.update({_id: marketId},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: new Date() } });
+
+
 
 
 

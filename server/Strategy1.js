@@ -72,7 +72,7 @@ Strategy1 = {
         BackLayQueue.start(updatedMarket._id,tradeId);
       }
       else {
-        Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
+        //Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
         BackLayQueue.openTrade(updatedMarket._id,tradeId);
       }
     }
