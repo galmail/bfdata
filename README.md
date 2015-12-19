@@ -1,1 +1,1 @@
-Just playing around with sports apis using meteor... feel free to download.
+Just playing around with sports api using meteor... feel free to download.
