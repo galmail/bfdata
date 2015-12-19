@@ -49,7 +49,7 @@ Strategy1 = {
         BackLayQueue.start(updatedMarket._id);
       }
       else {
-        BackLayQueue.openTrade(updatedMarket._id);
+        BackLayQueue.openTrade(updatedMarket._id,entryPrice);
       }
     }
 
@@ -75,7 +75,7 @@ Strategy1 = {
       }
       Trades.update({_id: market.tradeId},{$set: { result: trade.result, tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      BackLayQueue.closeTrade(market._id);
+      BackLayQueue.forceCloseTrade(market._id);
       return;
     }
 
@@ -84,7 +84,7 @@ Strategy1 = {
       console.log("market closed or suspended...");
       Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      BackLayQueue.closeTrade(market._id);
+      BackLayQueue.forceCloseTrade(market._id);
       return;
     }
     
