@@ -14,14 +14,22 @@ Strategy1 = {
 	},
 
 	trade: function(market){
-		if(market.tradingInProgress) return Strategy1.monitorTrade(market);
+		if(market.tradingInProgress){
+      if(Meteor.settings.bf.virtualTrading){
+        return Strategy1.monitorVirtualTrade(market);
+      }
+      else {
+        return Strategy1.monitorTrade(market);
+      }
+    }
 		var updatedMarket = Strategy1.checkSignals(market);
 		if(updatedMarket==null || !updatedMarket.allSignalsGreen) return false;
 		console.log("All signals are green!");
     updatedMarket.tradingStartTime = new Date();
     var entryPrice = parseFloat(updatedMarket.bestToBack + 0.01).toFixed(2);
     var exitPrice = parseFloat(updatedMarket.bestToBack).toFixed(2);
-		// Create Trade Object.
+
+    // Create Trade Object.
     var tradeId = Trades.insert({
       eventId: updatedMarket.eventId,
       marketId: updatedMarket._id,
@@ -40,22 +48,44 @@ Strategy1 = {
       marketSuspended: false,
       minPriceTraded: null,
       maxPriceTraded: null,
-      result: null
+      result: null,
+      virtual: Meteor.settings.bf.virtualTrading,
+      backOrder: {
+        price: null,
+        orderPlacedTime: null,
+        orderMatchedTime: null
+      },
+      layOrder: {
+        price: null,
+        orderPlacedTime: null,
+        orderMatchedTime: null
+      },
+      status: "Created"
     });
-    Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
 
-    if(entryPrice > 1.03 && entryPrice < 1.25){
+    if(Meteor.settings.bf.virtualTrading){
+      Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
+    }
+
+    if(entryPrice > 1.03 && entryPrice < 1.25 && !Meteor.settings.bf.virtualTrading){
       if(!updatedMarket.isHot){
-        BackLayQueue.start(updatedMarket._id);
+        BackLayQueue.start(updatedMarket._id,tradeId);
       }
       else {
-        BackLayQueue.openTrade(updatedMarket._id,entryPrice);
+        Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
+        BackLayQueue.openTrade(updatedMarket._id,tradeId);
       }
     }
 
 	},
 
-	monitorTrade: function(market){
+  // Monitor Real-Money Trades, watching placed orders.
+  monitorTrade: function(market){
+    console.log("TODO implement monitor trade function...");
+  },
+
+  // Monitor Virtual Trades using prices only.
+	monitorVirtualTrade: function(market){
     var trade = Trades.findOne({_id: market.tradeId});
     var lastPriceTraded = parseFloat(market.runners[0].lastPriceTraded);
 
@@ -75,7 +105,7 @@ Strategy1 = {
       }
       Trades.update({_id: market.tradeId},{$set: { result: trade.result, tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      BackLayQueue.forceCloseTrade(market._id);
+      //BackLayQueue.forceCloseTrade(market._id);
       return;
     }
 
@@ -84,7 +114,7 @@ Strategy1 = {
       console.log("market closed or suspended...");
       Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      BackLayQueue.forceCloseTrade(market._id);
+      //BackLayQueue.forceCloseTrade(market._id);
       return;
     }
     
@@ -103,7 +133,7 @@ Strategy1 = {
       trade.result = "success";
       Trades.update({_id: market.tradeId},{$set: trade });
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      BackLayQueue.closeTrade(market._id);
+      //BackLayQueue.closeTrade(market._id);
       return;
     }
 

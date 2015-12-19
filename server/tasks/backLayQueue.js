@@ -9,7 +9,7 @@ BackLayQueue = {
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
 
-  start: function(marketId){
+  start: function(marketId,tradeId){
     var backLay = function(marketId){
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
@@ -36,10 +36,15 @@ BackLayQueue = {
 
     console.log("Start Back/Lay Queue on Market: " + market.name);
     Markets.update({_id: marketId},{ $set: { isHot: true, backLayStarted: true }});
+    Trades.update({_id: tradeId},{ $set: { status: "BackLayQueue Starting", result: "neutral", tradingEndTime: new Date() } });
     Meteor.setTimeout(function(){ backLay(marketId); },200);
   },
 
   stop: function(marketId){
+    if(Meteor.settings.bf.virtualTrading) return;
+
+    //TODO: dont stop the queue if there are placed orders.
+
     var market = Markets.findOne({_id: marketId});
     if(market!=null && (market.backLayStarted || market.isHot)){
       console.log("Stop Back/Lay Queue on Market: " + market.name);
@@ -48,12 +53,9 @@ BackLayQueue = {
     BackLayQueue.cancelAllPendingOrders(marketId);
   },
 
-  openTrade: function(marketId,entryPrice,exitPrice){
-    console.log("TODO: Open Trade on Market: " + marketId);
-    return;
-
-    //1. get the last batch of this market.
-    if(BackLayQueue.pendingOrders.length==0) return;
+  openTrade: function(marketId,tradeId){
+    var trade = Trades.findOne({_id: tradeId});
+    if(trade==null || BackLayQueue.pendingOrders.length==0) return;
     var batchId = null;
     var lastOrders = [];
     var backOrder = null;
@@ -66,10 +68,10 @@ BackLayQueue = {
           var orderInfo = orderId.split('-')[1];
           var action = orderInfo[0];
           var price = parseFloat(orderInfo.replace(orderInfo[0],""));
-          if(action=="b" && price==entryPrice){
+          if(action=="b" && price==trade.entryPrice){
             backOrder = orderId;
           }
-          else if(action=="l" && price==exitPrice){
+          else if(action=="l" && price==trade.exitPrice){
             layOrder = orderId;
           }
           lastOrders.push(orderId);
@@ -82,10 +84,10 @@ BackLayQueue = {
           var orderInfo = orderId.split('-')[1];
           var action = orderInfo[0];
           var price = parseFloat(orderInfo.replace(orderInfo[0],""));
-          if(action=="b" && price==entryPrice){
+          if(action=="b" && price==trade.entryPrice){
             backOrder = orderId;
           }
-          else if(action=="l" && price==exitPrice){
+          else if(action=="l" && price==trade.exitPrice){
             layOrder = orderId;
           }
           lastOrders.push(orderId);
@@ -97,20 +99,29 @@ BackLayQueue = {
     var now = new Date().getTime();
     var nextOrderReaction = now - lastOrdersTime;
     if(nextOrderReaction >= 1000){
-      console.log("Aborting OpenTrade, lastOrdersTime is: " + nextOrderReaction + "ms");
+      console.log("Aborting OpenTrade @"+marketId+", lastOrdersTime is: " + nextOrderReaction + "ms");
+      Trades.update({_id: tradeId},{$set: { status: "NextOrder Delayed", result: "neutral", tradingEndTime: new Date() }});
+      Markets.update({_id: marketId},{ $set: { tradingInProgress: false, tradingEndTime: new Date() } });
       return;
     }
     else if(backOrder==null || layOrder==null){
-      console.log("Aborting OpenTrade, backOrder/layOrder dont have entry/exit price.");
+      console.log("Aborting OpenTrade @"+marketId+", backOrder/layOrder dont have entry/exit price.");
+      console.log("entryPrice: " + trade.entryPrice + " exitPrice: " + trade.exitPrice);
+      console.log("batchOrders: " + lastOrders.join("\n"));
       return;
     }
     else {
-      console.log("Placing backOrder/layOrder for entryPrice: " + entryPrice + " and exitPrice: " + exitPrice);
+      console.log("Placing backOrder/layOrder @"+marketId+", for entryPrice: " + trade.entryPrice + " and exitPrice: " + trade.exitPrice);
       //remove these orders from pendingOrders and insert them in the placedOrders array.
       BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(backOrder), 1);
       BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(layOrder), 1);
       BackLayQueue.placedOrders.splice(0, 0, backOrder);
       BackLayQueue.placedOrders.splice(0, 0, layOrder);
+
+
+
+
+
     }
 
   },
