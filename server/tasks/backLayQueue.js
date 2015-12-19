@@ -14,10 +14,15 @@ BackLayQueue = {
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
       if(market==null || !market.isHot) return;
+
+      if(new Date() - market.backLayStartTime >= (1000*market.betDelay - BackLayQueue.placeOrderFrecuency)){
+        BackLayQueue.cancelFirstBatchPendingOrders(marketId);
+      }
+
       var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay;
       var overPrice = parseFloat(price + 0.01).toFixed(2);
       var underPrice = parseFloat(price - 0.01).toFixed(2);
-      BackLayQueue.cancelFirstBatchPendingOrders(marketId);
+      
       if(BackLayQueue.ordersBatchSize != 4) return;
       var batchId = marketId + '+' + new Date().getTime();
       // for now, only back and lay on the under market.
@@ -35,9 +40,9 @@ BackLayQueue = {
     if(market==null || market.backLayStarted) return;
 
     console.log("Start Back/Lay Queue on Market: " + market.name);
-    Markets.update({_id: marketId},{ $set: { isHot: true, backLayStarted: true }});
+    Markets.update({_id: marketId},{ $set: { isHot: true, backLayStarted: true, backLayStartTime: new Date() }});
     Trades.update({_id: tradeId},{ $set: { status: "BackLayQueue Starting", result: "neutral", tradingEndTime: new Date() } });
-    Meteor.setTimeout(function(){ backLay(marketId); },200);
+    backLay(marketId);
   },
 
   stop: function(marketId){
