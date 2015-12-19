@@ -77,6 +77,11 @@ Meteor.methods({
   updateEventScore: function(eventId){
     updateEventScore(eventId);
     return true;
+  },
+
+  cancelAllOrders: function(){
+    BackLayQueue.cancelAllOrders();
+    return true;
   }
 
 });

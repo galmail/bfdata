@@ -43,6 +43,16 @@ Strategy1 = {
       result: null
     });
     Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
+
+    if(entryPrice > 1.03 && entryPrice < 1.25){
+      if(!updatedMarket.isHot){
+        BackLayQueue.start(updatedMarket._id);
+      }
+      else {
+        BackLayQueue.openTrade(updatedMarket._id);
+      }
+    }
+
 	},
 
 	monitorTrade: function(market){
@@ -65,6 +75,7 @@ Strategy1 = {
       }
       Trades.update({_id: market.tradeId},{$set: { result: trade.result, tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
+      BackLayQueue.closeTrade(market._id);
       return;
     }
 
@@ -73,6 +84,7 @@ Strategy1 = {
       console.log("market closed or suspended...");
       Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
+      BackLayQueue.closeTrade(market._id);
       return;
     }
     
@@ -91,6 +103,7 @@ Strategy1 = {
       trade.result = "success";
       Trades.update({_id: market.tradeId},{$set: trade });
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
+      BackLayQueue.closeTrade(market._id);
       return;
     }
 
@@ -101,11 +114,21 @@ Strategy1 = {
 	// check if all signals are green
 	checkSignals: function(market){
 		market.signals = {};
+
 		// if market is closed, abort
-		if(market.status == "CLOSED" || market.status == "SUSPENDED") return;
+		if(market.status == "CLOSED" || market.status == "SUSPENDED"){
+      BackLayQueue.stop(market._id);
+      return null;
+    }
 		// if market has not been traded, abort
 		var lastPriceTraded = market.runners[0].lastPriceTraded;
-		if(lastPriceTraded==null) return null;
+		if(lastPriceTraded==null){
+      BackLayQueue.stop(market._id);
+      return null;
+    }
+    else if(lastPriceTraded <= Strategy1.signals.minPrice || lastPriceTraded > Strategy1.signals.maxPrice){
+      BackLayQueue.stop(market._id);
+    }
 
 		// if market is unsafe, abort
 		var marketGoals = parseFloat(market.name.split(" ")[1]);
@@ -113,6 +136,7 @@ Strategy1 = {
   	market.isSafe = true;
     if(totalGoals==null || (totalGoals!=null && totalGoals+1>marketGoals)){
   		market.isSafe = false;
+      BackLayQueue.stop(market._id);
   		return null;
   	}
 
