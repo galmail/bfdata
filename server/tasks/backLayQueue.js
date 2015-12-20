@@ -298,12 +298,18 @@ BackLayQueue = {
   // check if both back/lay orders of this market were matched,
   // if none were matched, cancel the trade.
   // if only one were matched, try to break-even.
-  breakEvenTrade: function(marketId,tradeId){
+  recoverTrade: function(marketId,tradeId,breakeven){
     BackLayQueue.cancelTrade(marketId,tradeId,function(orderIds,matchedOrders){
       if(matchedOrders.length==1 && orderIds.length==2){
-        console.log("Only one order was matched, trying to breakeven..");
         
-        var breakevenFn = function(ok){
+        if(breakeven){
+          console.log("Only one order was matched, trying to breakeven..");
+        }
+        else {
+          console.log("Only one order was matched, trying to abort now..");
+        }
+        
+        var recoverFn = function(ok){
           if(!ok) return;
           var breakevenOrder = null;
           var matchedOrder = matchedOrders[0];
@@ -313,10 +319,14 @@ BackLayQueue = {
               var orderInfo = orderId.split('-')[1];
               var action = orderInfo[0];
               var price = parseFloat(orderInfo.replace(orderInfo[0],""));
-              if(action!=matchedOrder.side[0].toLowerCase() && price==matchedOrder.price){
-                breakevenOrder = BackLayQueue.pendingOrders[i];
-                break;
+              
+              if(breakeven){
+                if(action!=matchedOrder.side[0].toLowerCase() && price==matchedOrder.price){
+                  breakevenOrder = BackLayQueue.pendingOrders[i];
+                  break;
+                }
               }
+
             }
           }
           if(breakevenOrder==null){
@@ -329,7 +339,7 @@ BackLayQueue = {
 
         _.each(orderIds,function(orderId){
           if(matchedOrders[0].betId!=orderId.split('::')[1]){
-            BackLayQueue.cancelOrder(marketId,orderId,breakevenFn);
+            BackLayQueue.cancelOrder(marketId,orderId,recoverFn);
           }
         });
 
