@@ -291,11 +291,8 @@ BackLayQueue = {
   // if none were matched, cancel the trade.
   // if only one were matched, try to abort the trade with a small loss.
   abortTrade: function(marketId,reason){
-    if(Meteor.settings.bf.virtualTrading) return;
-    console.log("TODO: Abort Trade on Market: " + marketId);
-    //Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
-    //Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-    return;
+    
+    
   },
 
   // check if both back/lay orders of this market were matched,
@@ -303,7 +300,7 @@ BackLayQueue = {
   // if only one were matched, try to break-even.
   breakEvenTrade: function(marketId,tradeId){
     BackLayQueue.cancelTrade(marketId,tradeId,function(orderIds,matchedOrders){
-      if(matchedOrders.length==1){
+      if(matchedOrders.length==1 && orderIds.length==2){
         console.log("Only one order was matched, trying to breakeven..");
         
         var breakevenFn = function(ok){
@@ -335,7 +332,7 @@ BackLayQueue = {
             BackLayQueue.cancelOrder(marketId,orderId,breakevenFn);
           }
         });
-        
+
       }
     });
   },
@@ -343,8 +340,9 @@ BackLayQueue = {
   // check if the placed orders of this market were matched, if none were match, cancel them.
   cancelTrade: function(marketId,tradeId,callback){
     var numOrdersCancelled = 0;
-    var orderCancelled = function(cancelled){
-      if(cancelled) numOrdersCancelled++;
+    var orderCancelled = function(orderId){
+      numOrdersCancelled++;
+      BackLayQueue.placedOrders.splice(BackLayQueue.placedOrders.indexOf(orderId), 1);
       if(numOrdersCancelled==2){
         // update trade
         Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "neutral", status: "No Orders Matched" } });
@@ -354,8 +352,8 @@ BackLayQueue = {
     BackLayQueue.checkTrade(marketId,tradeId,function(orderIds,matchedOrders){
       if(matchedOrders.length==0){
         console.log("No orders were matched, canceling both orders now...");
-        BackLayQueue.cancelOrder(marketId,orderIds[0],orderCancelled);
-        BackLayQueue.cancelOrder(marketId,orderIds[1],orderCancelled);
+        BackLayQueue.cancelOrder(marketId,orderIds[0],function(ok){ if(ok) orderCancelled(orderIds[0]); });
+        BackLayQueue.cancelOrder(marketId,orderIds[1],function(ok){ if(ok) orderCancelled(orderIds[1]); });
       }
       if(callback) callback(orderIds,matchedOrders);
     });
@@ -406,6 +404,9 @@ BackLayQueue = {
         if(matchedOrders.length==2){
           // both orders were matched, update trade and market.
           console.log("Trade Success!!!");
+          _.each(orderIds,function(orderId){
+            BackLayQueue.placedOrders.splice(BackLayQueue.placedOrders.indexOf(orderId), 1);
+          });
           Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "success", status: "success" } });
           Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
         }
