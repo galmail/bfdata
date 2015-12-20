@@ -174,7 +174,7 @@ BackLayQueue = {
     );    
   },
 
-  cancelOrder: function(marketId,orderId){
+  cancelOrder: function(marketId,orderId,callback){
     // removing the order from pending orders
     BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(orderId), 1);
     
@@ -196,11 +196,12 @@ BackLayQueue = {
         var cancelExecutionReport = res.response.result;
         if(cancelExecutionReport.status == "SUCCESS"){
           // ok, the order was canceled!
-          console.log("the order was canceled!");
+          //console.log("the order was canceled!");
+          if(callback) callback(true);
         }
-        else if (cancelExecutionReport.status == "FAILURE"){
+        else {
           console.log("cancel order failed: ", cancelExecutionReport.errorCode);
-          //TODO: order was not canceled, DO SOMETHING!!
+          if(callback) callback(false);
         }
       }
     );
@@ -301,47 +302,74 @@ BackLayQueue = {
   // if none were matched, cancel the trade.
   // if only one were matched, try to break-even.
   breakEvenTrade: function(marketId,tradeId){
-    BackLayQueue.cancelTrade(marketId,tradeId,function(numOrdersMatched,orders){
-      if(numOrdersMatched==1){
+    BackLayQueue.cancelTrade(marketId,tradeId,function(orderIds,matchedOrders){
+      if(matchedOrders.length==1){
         console.log("Only one order was matched, trying to breakeven..");
         
+        var breakevenFn = function(ok){
+          if(!ok) return;
+          var breakevenOrder = null;
+          var matchedOrder = matchedOrders[0];
+          for(var i=BackLayQueue.pendingOrders.length-1;i>=0;i--){
+            if(BackLayQueue.pendingOrders[i].split('+')[0]==marketId){
+              var orderId = BackLayQueue.pendingOrders[i].split('::')[0];
+              var orderInfo = orderId.split('-')[1];
+              var action = orderInfo[0];
+              var price = parseFloat(orderInfo.replace(orderInfo[0],""));
+              if(action!=matchedOrder.side[0].toLowerCase() && price==matchedOrder.price){
+                breakevenOrder = BackLayQueue.pendingOrders[i];
+                break;
+              }
+            }
+          }
+          if(breakevenOrder==null){
+            console.log("Couldnt find a pending order to breakeven..");
+            return;
+          }
+          BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(breakevenOrder), 1);
+          BackLayQueue.placedOrders.splice(0, 0, breakevenOrder);
+        };
 
-
+        _.each(orderIds,function(orderId){
+          if(matchedOrders[0].betId!=orderId.split('::')[1]){
+            BackLayQueue.cancelOrder(marketId,orderId,breakevenFn);
+          }
+        });
         
-
-
-
-
-
-
-
       }
     });
   },
 
   // check if the placed orders of this market were matched, if none were match, cancel them.
   cancelTrade: function(marketId,tradeId,callback){
-    BackLayQueue.checkTrade(marketId,tradeId,function(numOrdersMatched,orders){
-      if(numOrdersMatched==0){
-        console.log("No orders were matched, canceling both orders now...");
-        BackLayQueue.cancelOrder(marketId,orders[0]);
-        BackLayQueue.cancelOrder(marketId,orders[1]);
+    var numOrdersCancelled = 0;
+    var orderCancelled = function(cancelled){
+      if(cancelled) numOrdersCancelled++;
+      if(numOrdersCancelled==2){
         // update trade
         Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "neutral", status: "No Orders Matched" } });
         Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
-        if(callback) callback(numOrdersMatched,orders);
       }
+    };
+    BackLayQueue.checkTrade(marketId,tradeId,function(orderIds,matchedOrders){
+      if(matchedOrders.length==0){
+        console.log("No orders were matched, canceling both orders now...");
+        BackLayQueue.cancelOrder(marketId,orderIds[0],orderCancelled);
+        BackLayQueue.cancelOrder(marketId,orderIds[1],orderCancelled);
+      }
+      if(callback) callback(orderIds,matchedOrders);
     });
   },
 
   // check if the placed orders of this market were matched.
   checkTrade: function(marketId,tradeId,callback){
     console.log("Checking Trade on Market: " + marketId);
-    var orders = [];
+    var matchedOrders = [];
+    var orderIds = [];
     var betIds = [];
     _.each(BackLayQueue.placedOrders,function(orderId){
       if(orderId.split('+')[0]==marketId){
-        orders.push(orderId);
+        orderIds.push(orderId);
         betIds.push(orderId.split('::')[1]);
       }
     });
@@ -363,10 +391,9 @@ BackLayQueue = {
           return false;
         }
 
-        var numOrdersMatched = 0;
         _.each(orderExecutionReport.currentOrders,function(order){
           if(order.status=="EXECUTION_COMPLETE"){
-            numOrdersMatched++;
+            matchedOrders.push(order);
             if(order.side=="BACK"){
               Trades.update({_id: tradeId},{ $set: { backOrder: order } });
             }
@@ -376,13 +403,13 @@ BackLayQueue = {
           }
         });
 
-        if(numOrdersMatched==2){
+        if(matchedOrders.length==2){
           // both orders were matched, update trade and market.
           console.log("Trade Success!!!");
           Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "success", status: "success" } });
           Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
         }
-        if(callback) callback(numOrdersMatched,orders);
+        if(callback) callback(orderIds,matchedOrders);
       }
     );
   },
