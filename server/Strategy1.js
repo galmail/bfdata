@@ -2,6 +2,14 @@
 
 Strategy1 = {
 
+  settings: {
+    tradeExpiryTime: 5000,          // after 5sec the trade will auto-cancel
+    partialTradeExpiryTime: 3000,   // after 3sec if the trade was partial matched, try to break-even
+    unmatchedTradeExpiryTime: 2000, // after 2sec if the trade was unmatched, cancel it
+    tradeMinEntryPrice: 1.04,       // only trade if entryPrice >= 1.04
+    tradeMaxEntryPrice: 1.24        // only trade if entryPrice <= 1.24
+  },
+
 	signals: {
 		//TODO: check for enough liquidity...
 		maxSpread: 0.01,          // checking max spread
@@ -67,12 +75,11 @@ Strategy1 = {
       Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
     }
 
-    if(entryPrice > 1.03 && entryPrice < 1.25 && !Meteor.settings.bf.virtualTrading){
+    if(entryPrice >= Strategy1.settings.tradeMinEntryPrice && entryPrice <= Strategy1.settings.tradeMaxEntryPrice && !Meteor.settings.bf.virtualTrading){
       if(!updatedMarket.isHot){
         BackLayQueue.start(updatedMarket._id,tradeId);
       }
       else {
-        //Markets.update({_id: updatedMarket._id},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: updatedMarket.tradingStartTime } });
         BackLayQueue.openTrade(updatedMarket._id,tradeId);
       }
     }
@@ -81,7 +88,42 @@ Strategy1 = {
 
   // Monitor Real-Money Trades, watching placed orders.
   monitorTrade: function(market){
-    console.log("TODO implement monitor trade function...");
+    var trade = Trades.findOne({_id: market.tradeId});
+    var lastPriceTraded = parseFloat(market.runners[0].lastPriceTraded);
+
+    // if market closed or suspended, mark trade as a failure and cancel/dutch the trade
+    if(market.status == "CLOSED" || market.status == "SUSPENDED"){
+      console.log("Closed/Suspended Market: " + market.name);
+      BackLayQueue.forceCloseTrade(market._id);
+      return;
+    }
+    // if trade time expired, mark trade as a failure and cancel/dutch the trade
+    if(new Date() - trade.tradingStartTime >= Strategy1.settings.tradeExpiryTime){
+      console.log("Trade Expired on Market: " + market.name);
+      BackLayQueue.forceCloseTrade(market._id);
+      return;
+    }
+
+    // after 3sec try to break-even if only one order was matched (partial-matched)
+    
+
+    // after 2sec cancel orders if none were matched
+
+
+    // if both orders were matched, save successful trade and finish
+
+
+    // setting min/max prices
+    if(trade.minPriceTraded == null || lastPriceTraded < trade.minPriceTraded){
+      trade.minPriceTraded = lastPriceTraded;
+    }
+    if(trade.maxPriceTraded == null || lastPriceTraded > trade.maxPriceTraded){
+      trade.maxPriceTraded = lastPriceTraded;
+    }
+
+    // update the trade object
+    Trades.update({_id: market.tradeId},{$set: trade });
+
   },
 
   // Monitor Virtual Trades using prices only.

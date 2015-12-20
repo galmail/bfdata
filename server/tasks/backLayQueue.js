@@ -10,6 +10,7 @@ BackLayQueue = {
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
 
   start: function(marketId,tradeId){
+    if(Meteor.settings.bf.virtualTrading) return;
     var backLay = function(marketId){
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
@@ -59,6 +60,7 @@ BackLayQueue = {
   },
 
   openTrade: function(marketId,tradeId){
+    if(Meteor.settings.bf.virtualTrading) return;
     var trade = Trades.findOne({_id: tradeId});
     if(trade==null || BackLayQueue.pendingOrders.length==0) return;
     var batchId = null;
@@ -126,24 +128,24 @@ BackLayQueue = {
       BackLayQueue.placedOrders.splice(0, 0, layOrder);
       Trades.update({_id: tradeId},{$set: { status: "Trade Started", result: null, tradingStartTime: new Date() }});
       Markets.update({_id: marketId},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: new Date() } });
-
-
-
-
-
-
-
     }
 
   },
 
   // Force to close the trade even with a loss.
   forceCloseTrade: function(marketId){
+    if(Meteor.settings.bf.virtualTrading) return;
     console.log("TODO: Force Close Trade on Market: " + marketId);
+
+
+
+    //Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
+    //Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
     return;
   },
 
   closeTrade: function(marketId){
+    if(Meteor.settings.bf.virtualTrading) return;
     console.log("TODO: Close Trade on Market: " + marketId);
     return;
     //1. check if the placed orders of this market were matched.
