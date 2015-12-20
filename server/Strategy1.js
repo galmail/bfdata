@@ -3,7 +3,7 @@
 Strategy1 = {
 
   settings: {
-    tradeExpiryTime: 5000,          // after 5sec the trade will auto-cancel
+    tradeExpiryTime: 6000,          // after 5sec the trade will auto-cancel
     partialTradeExpiryTime: 3000,   // after 3sec if the trade was partial matched, try to break-even
     unmatchedTradeExpiryTime: 2000, // after 2sec if the trade was unmatched, cancel it
     tradeMinEntryPrice: 1.04,       // only trade if entryPrice >= 1.04
@@ -12,13 +12,13 @@ Strategy1 = {
 
 	signals: {
 		//TODO: check for enough liquidity...
-		maxSpread: 0.01,          // checking max spread
-		maxPrice: 1.18,						// price must be less than or equals 1.18 for under
-		minPrice: 1.02,						// price must be at least 1.02 for under
-		//priceOverMinPrice: true, 	// price must be greater than min price
-		lastTimeMinPrice: 3000,		// last time price was exchanged at minPrice was no longer than 3sec ago
-		priceOscillation: 2000,	  // price should change at least twice in the last 2sec. 
-		safeGame: true						// the game is safe
+		maxSpread: 0.01,            // checking max spread
+		maxPrice: 1.18,						  // price must be less than or equals 1.18 for under
+		minPrice: 1.02,						  // price must be at least 1.02 for under
+		//priceOverMinPrice: true,  // price must be greater than min price
+		lastTimeMinPrice: 3000,		  // last time price was exchanged at minPrice was no longer than 3sec ago
+		priceOscillation: 2000,	    // price should change at least twice in the last 2sec. 
+		safeGame: true						  // the game is safe
 	},
 
 	trade: function(market){
@@ -35,7 +35,7 @@ Strategy1 = {
 		console.log("All signals are green!");
     updatedMarket.tradingStartTime = new Date();
     var entryPrice = parseFloat(updatedMarket.bestToBack + 0.01).toFixed(2);
-    var exitPrice = parseFloat(updatedMarket.bestToBack).toFixed(2);
+    var exitPrice = parseFloat(updatedMarket.bestToLay - 0.01).toFixed(2);
 
     // Create Trade Object.
     var tradeId = Trades.insert({
@@ -58,16 +58,8 @@ Strategy1 = {
       maxPriceTraded: null,
       result: null,
       virtual: Meteor.settings.bf.virtualTrading,
-      backOrder: {
-        price: null,
-        orderPlacedTime: null,
-        orderMatchedTime: null
-      },
-      layOrder: {
-        price: null,
-        orderPlacedTime: null,
-        orderMatchedTime: null
-      },
+      backOrder: {},
+      layOrder: {},
       status: "Created"
     });
 
@@ -91,39 +83,39 @@ Strategy1 = {
     var trade = Trades.findOne({_id: market.tradeId});
     var lastPriceTraded = parseFloat(market.runners[0].lastPriceTraded);
 
-    // if market closed or suspended, mark trade as a failure and cancel/dutch the trade
-    if(market.status == "CLOSED" || market.status == "SUSPENDED"){
-      console.log("Closed/Suspended Market: " + market.name);
-      BackLayQueue.forceCloseTrade(market._id);
-      return;
-    }
-    // if trade time expired, mark trade as a failure and cancel/dutch the trade
-    if(new Date() - trade.tradingStartTime >= Strategy1.settings.tradeExpiryTime){
-      console.log("Trade Expired on Market: " + market.name);
-      BackLayQueue.forceCloseTrade(market._id);
-      return;
-    }
-
-    // after 3sec try to break-even if only one order was matched (partial-matched)
-    
-
-    // after 2sec cancel orders if none were matched
-
-
-    // if both orders were matched, save successful trade and finish
-
-
-    // setting min/max prices
+    // update min/max prices on the trade
     if(trade.minPriceTraded == null || lastPriceTraded < trade.minPriceTraded){
       trade.minPriceTraded = lastPriceTraded;
     }
     if(trade.maxPriceTraded == null || lastPriceTraded > trade.maxPriceTraded){
       trade.maxPriceTraded = lastPriceTraded;
     }
+    Trades.update({_id: market.tradeId},{$set: { minPriceTraded: trade.minPriceTraded, maxPriceTraded: trade.maxPriceTraded } });
 
-    // update the trade object
-    Trades.update({_id: market.tradeId},{$set: trade });
-
+    // if market closed or suspended, mark trade as a failure and cancel/dutch the trade
+    if(market.status == "CLOSED" || market.status == "SUSPENDED"){
+      console.log("Closed/Suspended Market: " + market.name);
+      BackLayQueue.abortTrade(market._id,"Market "+market.status);
+    }
+    // after 5sec, trade time expired, mark trade as a failure and cancel/dutch the trade
+    else if(new Date() - trade.tradingStartTime >= Strategy1.settings.tradeExpiryTime){
+      console.log("Trade Expired on Market: " + market.name);
+      BackLayQueue.abortTrade(market._id,"Trade Expired");
+    }
+    // after 3sec try to break-even
+    else if(new Date() - trade.tradingStartTime >= Strategy1.settings.partialTradeExpiryTime){
+      console.log("Looking to Break-even Trade on Market: " + market.name);
+      BackLayQueue.breakEvenTrade(market._id,market.tradeId);
+    }
+    // after 2sec try to cancel trade if none were matched
+    else if(new Date() - trade.tradingStartTime >= Strategy1.settings.unmatchedTradeExpiryTime){
+      console.log("Looking to Cancel Trade on Market: " + market.name);
+      BackLayQueue.cancelTrade(market._id,market.tradeId);
+    }
+    else {
+      // if both orders were matched, save successful trade and finish
+      BackLayQueue.checkTrade(market._id,market.tradeId);
+    }
   },
 
   // Monitor Virtual Trades using prices only.
@@ -147,7 +139,6 @@ Strategy1 = {
       }
       Trades.update({_id: market.tradeId},{$set: { result: trade.result, tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      //BackLayQueue.forceCloseTrade(market._id);
       return;
     }
 
@@ -156,7 +147,6 @@ Strategy1 = {
       console.log("market closed or suspended...");
       Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      //BackLayQueue.forceCloseTrade(market._id);
       return;
     }
     
@@ -175,7 +165,6 @@ Strategy1 = {
       trade.result = "success";
       Trades.update({_id: market.tradeId},{$set: trade });
       Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-      //BackLayQueue.closeTrade(market._id);
       return;
     }
 
@@ -198,7 +187,7 @@ Strategy1 = {
       BackLayQueue.stop(market._id);
       return null;
     }
-    else if(lastPriceTraded <= Strategy1.signals.minPrice || lastPriceTraded > Strategy1.signals.maxPrice){
+    else if(lastPriceTraded < Strategy1.settings.tradeMinEntryPrice || lastPriceTraded > Strategy1.settings.tradeMaxEntryPrice){
       BackLayQueue.stop(market._id);
     }
 

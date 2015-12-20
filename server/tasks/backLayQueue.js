@@ -4,7 +4,7 @@ BackLayQueue = {
 
   amount: 2,                 // use 2 pounds as fixed amount for each order
   placeOrderFrecuency: 2000, // place new order every 2000ms
-  ordersBatchSize: 4,        // place 4 orders at the same time
+  ordersBatchSize: 6,        // place 6 orders at the same time
   pendingOrders: [],         // where all the pending orders will be stored
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
@@ -24,14 +24,20 @@ BackLayQueue = {
       var overPrice = parseFloat(price + 0.01).toFixed(2);
       var underPrice = parseFloat(price - 0.01).toFixed(2);
       
-      if(BackLayQueue.ordersBatchSize != 4) return;
+      if(BackLayQueue.ordersBatchSize != 6) return;
       var batchId = marketId + '+' + new Date().getTime();
       // for now, only back and lay on the under market.
       var selectionId = market.runners[0].selectionId;
+      
       BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId);
       BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId);
       BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
       BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
+
+      // This two are only used to exit the trade, in case things go wrong.
+      BackLayQueue.placeOrder(batchId,marketId,"back",underPrice,selectionId);
+      BackLayQueue.placeOrder(batchId,marketId,"lay",overPrice,selectionId);
+      
       Meteor.setTimeout(function(){
         backLay(marketId);
       },BackLayQueue.placeOrderFrecuency);
@@ -48,10 +54,8 @@ BackLayQueue = {
 
   stop: function(marketId){
     if(Meteor.settings.bf.virtualTrading) return;
-
-    //TODO: dont stop the queue if there are placed orders.
-
     var market = Markets.findOne({_id: marketId});
+    if(market.tradingInProgress) return; //never stop the queue when trade is in progress.
     if(market!=null && (market.backLayStarted || market.isHot)){
       console.log("Stop Back/Lay Queue on Market: " + market.name);
       Markets.update({_id: marketId},{ $set: { isHot: false, backLayStarted: false }});
@@ -71,33 +75,33 @@ BackLayQueue = {
       if(batchId==null){
         if(BackLayQueue.pendingOrders[i].split('+')[0]==marketId){
           batchId = BackLayQueue.pendingOrders[i].split('-')[0];
-          var orderId = BackLayQueue.pendingOrders[i];
+          var orderId = BackLayQueue.pendingOrders[i].split('::')[0];
           var orderInfo = orderId.split('-')[1];
           var action = orderInfo[0];
           var price = parseFloat(orderInfo.replace(orderInfo[0],""));
           if(action=="b" && price==trade.entryPrice){
-            backOrder = orderId;
+            backOrder = BackLayQueue.pendingOrders[i];
           }
           else if(action=="l" && price==trade.exitPrice){
-            layOrder = orderId;
+            layOrder = BackLayQueue.pendingOrders[i];
           }
-          lastOrders.push(orderId);
+          lastOrders.push(BackLayQueue.pendingOrders[i]);
           if((backOrder!=null && layOrder!=null) || lastOrders.length==BackLayQueue.ordersBatchSize){ break; }
         }
       }
       else {
         if(BackLayQueue.pendingOrders[i].split('-')[0]==batchId){
-          var orderId = BackLayQueue.pendingOrders[i];
+          var orderId = BackLayQueue.pendingOrders[i].split('::')[0];
           var orderInfo = orderId.split('-')[1];
           var action = orderInfo[0];
           var price = parseFloat(orderInfo.replace(orderInfo[0],""));
           if(action=="b" && price==trade.entryPrice){
-            backOrder = orderId;
+            backOrder = BackLayQueue.pendingOrders[i];
           }
           else if(action=="l" && price==trade.exitPrice){
-            layOrder = orderId;
+            layOrder = BackLayQueue.pendingOrders[i];
           }
-          lastOrders.push(orderId);
+          lastOrders.push(BackLayQueue.pendingOrders[i]);
           if((backOrder!=null && layOrder!=null) || lastOrders.length==BackLayQueue.ordersBatchSize){ break; }
         }
       }
@@ -129,34 +133,11 @@ BackLayQueue = {
       Trades.update({_id: tradeId},{$set: { status: "Trade Started", result: null, tradingStartTime: new Date() }});
       Markets.update({_id: marketId},{ $set: { tradeId: tradeId, tradingInProgress: true, tradingStartTime: new Date() } });
     }
-
-  },
-
-  // Force to close the trade even with a loss.
-  forceCloseTrade: function(marketId){
-    if(Meteor.settings.bf.virtualTrading) return;
-    console.log("TODO: Force Close Trade on Market: " + marketId);
-
-
-
-    //Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
-    //Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
-    return;
-  },
-
-  closeTrade: function(marketId){
-    if(Meteor.settings.bf.virtualTrading) return;
-    console.log("TODO: Close Trade on Market: " + marketId);
-    return;
-    //1. check if the placed orders of this market were matched.
-    //2. if both were matched, save successful trade.
   },
 
   placeOrder: function(batchId,marketId,action,price,selectionId){
     // place order and insert into pending orders if order placed OK
     var orderId = batchId + '-' + action[0] + price;
-    // inserting order into pending orders...
-    BackLayQueue.pendingOrders.splice(0, 0, orderId);
     TestBot.placeOrders(
       {
         marketId: marketId,
@@ -179,10 +160,16 @@ BackLayQueue = {
           return false;
         }
         var placeExecutionReport = res.response.result;
-        if(placeExecutionReport.status == "FAILURE"){
-          console.log("place order failed: ", placeExecutionReport.errorCode);
+        if(placeExecutionReport.status != "SUCCESS"){
+          console.log("Order Not Placed: ", placeExecutionReport.errorCode);
           //TODO: order was not placed OK, DO SOMETHING!!
+          return;
         }
+        // order placed ok, save betId.
+        var betId = placeExecutionReport.instructionReports[0].betId;
+        orderId = orderId + "::" + betId;
+        // inserting order into pending orders...
+        BackLayQueue.pendingOrders.splice(0, 0, orderId);
       }
     );    
   },
@@ -195,9 +182,9 @@ BackLayQueue = {
     TestBot.cancelOrders(
       {
         marketId: marketId,
-        customerRef: orderId,
+        customerRef: orderId.split('::')[0],
         instructions: [{
-          //betId: betId,
+          betId: orderId.split('::')[1]
           //sizeReduction can be use in case of partial cancel.
         }]
       },
@@ -285,6 +272,125 @@ BackLayQueue = {
         }
       }
     );
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // check if both back/lay orders of this market were matched.
+  // if none were matched, cancel the trade.
+  // if only one were matched, try to abort the trade with a small loss.
+  abortTrade: function(marketId,reason){
+    if(Meteor.settings.bf.virtualTrading) return;
+    console.log("TODO: Abort Trade on Market: " + marketId);
+    //Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, result: "failure", tradingEndTime: new Date() }});
+    //Markets.update({_id: market._id},{ $set: { tradingInProgress: false } });
+    return;
+  },
+
+  // check if both back/lay orders of this market were matched,
+  // if none were matched, cancel the trade.
+  // if only one were matched, try to break-even.
+  breakEvenTrade: function(marketId,tradeId){
+    BackLayQueue.cancelTrade(marketId,tradeId,function(numOrdersMatched,orders){
+      if(numOrdersMatched==1){
+        console.log("Only one order was matched, trying to breakeven..");
+        
+
+
+        
+
+
+
+
+
+
+
+      }
+    });
+  },
+
+  // check if the placed orders of this market were matched, if none were match, cancel them.
+  cancelTrade: function(marketId,tradeId,callback){
+    BackLayQueue.checkTrade(marketId,tradeId,function(numOrdersMatched,orders){
+      if(numOrdersMatched==0){
+        console.log("No orders were matched, canceling both orders now...");
+        BackLayQueue.cancelOrder(marketId,orders[0]);
+        BackLayQueue.cancelOrder(marketId,orders[1]);
+        // update trade
+        Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "neutral", status: "No Orders Matched" } });
+        Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
+        if(callback) callback(numOrdersMatched,orders);
+      }
+    });
+  },
+
+  // check if the placed orders of this market were matched.
+  checkTrade: function(marketId,tradeId,callback){
+    console.log("Checking Trade on Market: " + marketId);
+    var orders = [];
+    var betIds = [];
+    _.each(BackLayQueue.placedOrders,function(orderId){
+      if(orderId.split('+')[0]==marketId){
+        orders.push(orderId);
+        betIds.push(orderId.split('::')[1]);
+      }
+    });
+
+    TestBot.listCurrentOrders(
+      {
+        betIds: [betIds],
+        dateRange: {}
+      },
+      function(err,res){
+        if(err){
+          console.log("ERROR: ",err);
+          return false;
+        }
+        var orderExecutionReport = res.response.result;
+        var numOrders = orderExecutionReport.currentOrders.length;
+        if(numOrders==0){
+          console.log("No orders available on market: " + marketId);
+          return false;
+        }
+
+        var numOrdersMatched = 0;
+        _.each(orderExecutionReport.currentOrders,function(order){
+          if(order.status=="EXECUTION_COMPLETE"){
+            numOrdersMatched++;
+            if(order.side=="BACK"){
+              Trades.update({_id: tradeId},{ $set: { backOrder: order } });
+            }
+            else {
+              Trades.update({_id: tradeId},{ $set: { layOrder: order } });
+            }
+          }
+        });
+
+        if(numOrdersMatched==2){
+          // both orders were matched, update trade and market.
+          console.log("Trade Success!!!");
+          Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "success", status: "success" } });
+          Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
+        }
+        if(callback) callback(numOrdersMatched,orders);
+      }
+    );
+  },
+
+  // adjust profit if partially matched, squeezing profit to 1%
+  adjustTrade: function(marketId){
+    //TODO: implement this function in the future
   }
+
 
 };
