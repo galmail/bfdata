@@ -3,7 +3,7 @@
 /////// ROUTES ///////
 
 Router.route('/', function(){
-  Router.go('/dashboard'); // by default show the dashboard
+  Router.go('/run'); // by default show the run page
 });
 
 
@@ -24,6 +24,7 @@ Router.route('/dashboard', function(){
 Router.route('/bots');
 Router.route('/test');
 Router.route('/logs');
+Router.route('/orders');
 Router.route('/run');
 
 // About Routes

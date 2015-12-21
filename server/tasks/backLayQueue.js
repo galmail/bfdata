@@ -9,9 +9,11 @@ BackLayQueue = {
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
 
-  start: function(marketId,tradeId){
-    if(Meteor.settings.bf.virtualTrading) return;
+  start: function(marketId){
     var backLay = function(marketId){
+
+      console.log("pending orders: " + BackLayQueue.pendingOrders.length);
+
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
       if(market==null || !market.isHot) return;
@@ -21,22 +23,22 @@ BackLayQueue = {
       }
 
       var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay;
-      var overPrice = parseFloat(price + 0.01).toFixed(2);
-      var underPrice = parseFloat(price - 0.01).toFixed(2);
+      var overPrice = parseFloat(price + 0.20).toFixed(2); //FIX: should be 0.01
+      var underPrice = parseFloat(price - 0.20).toFixed(2); //FIX: should be 0.01
       
-      if(BackLayQueue.ordersBatchSize != 6) return;
+      //if(BackLayQueue.ordersBatchSize != 6) return;
       var batchId = marketId + '+' + new Date().getTime();
       // for now, only back and lay on the under market.
       var selectionId = market.runners[0].selectionId;
       
       BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId);
-      BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId);
-      BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
-      BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
+      //BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId);
+      //BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
+      //BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
 
       // This two are only used to exit the trade, in case things go wrong.
-      BackLayQueue.placeOrder(batchId,marketId,"back",underPrice,selectionId);
-      BackLayQueue.placeOrder(batchId,marketId,"lay",overPrice,selectionId);
+      //BackLayQueue.placeOrder(batchId,marketId,"back",underPrice,selectionId);
+      //BackLayQueue.placeOrder(batchId,marketId,"lay",overPrice,selectionId);
       
       Meteor.setTimeout(function(){
         backLay(marketId);
@@ -48,23 +50,28 @@ BackLayQueue = {
 
     console.log("Start Back/Lay Queue on Market: " + market.name);
     Markets.update({_id: marketId},{ $set: { isHot: true, backLayStarted: true, backLayStartTime: new Date() }});
-    Trades.update({_id: tradeId},{ $set: { status: "BackLayQueue Starting", result: "neutral", tradingEndTime: new Date() } });
     backLay(marketId);
   },
 
-  stop: function(marketId){
-    if(Meteor.settings.bf.virtualTrading) return;
+  stop: function(marketId,testing){
+    if(Meteor.settings.bf.virtualTrading && !testing) return;
     var market = Markets.findOne({_id: marketId});
     if(market.tradingInProgress) return; //never stop the queue when trade is in progress.
     if(market!=null && (market.backLayStarted || market.isHot)){
       console.log("Stop Back/Lay Queue on Market: " + market.name);
       Markets.update({_id: marketId},{ $set: { isHot: false, backLayStarted: false }});
     }
+    
     BackLayQueue.cancelAllPendingOrders(marketId);
+
+    var clearOrdersFn = Meteor.setInterval(function(){
+      BackLayQueue.cancelAllPendingOrders(marketId);
+      if(BackLayQueue.pendingOrders.length==0) Meteor.clearInterval(clearOrdersFn);
+    },BackLayQueue.placeOrderFrecuency);
+
   },
 
   openTrade: function(marketId,tradeId){
-    if(Meteor.settings.bf.virtualTrading) return;
     var trade = Trades.findOne({_id: tradeId});
     if(trade==null || BackLayQueue.pendingOrders.length==0) return;
     var batchId = null;
@@ -138,10 +145,12 @@ BackLayQueue = {
   placeOrder: function(batchId,marketId,action,price,selectionId){
     // place order and insert into pending orders if order placed OK
     var orderId = batchId + '-' + action[0] + price;
+    var createdAt = new Date();
+
     TestBot.placeOrders(
       {
         marketId: marketId,
-        customerRef: orderId,
+        //customerRef: orderId,
         instructions: [{
           handicap: "0",
           orderType: "LIMIT",
@@ -168,8 +177,12 @@ BackLayQueue = {
         // order placed ok, save betId.
         var betId = placeExecutionReport.instructionReports[0].betId;
         orderId = orderId + "::" + betId;
-        // inserting order into pending orders...
+        // insert order in pending orders
         BackLayQueue.pendingOrders.splice(0, 0, orderId);
+
+        Fiber(function(){
+          Orders.insert({ orderId: orderId, createdAt: createdAt, placedTime: new Date(), side: action, price: price, marketId: marketId});
+        }).run();
       }
     );    
   },
@@ -177,12 +190,12 @@ BackLayQueue = {
   cancelOrder: function(marketId,orderId,callback){
     // removing the order from pending orders
     BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(orderId), 1);
-    
+
     // cancel the order
     TestBot.cancelOrders(
       {
         marketId: marketId,
-        customerRef: orderId.split('::')[0],
+        //customerRef: orderId.split('::')[0],
         instructions: [{
           betId: orderId.split('::')[1]
           //sizeReduction can be use in case of partial cancel.
@@ -196,11 +209,13 @@ BackLayQueue = {
         var cancelExecutionReport = res.response.result;
         if(cancelExecutionReport.status == "SUCCESS"){
           // ok, the order was canceled!
-          //console.log("the order was canceled!");
+          Fiber(function(){
+            Orders.update({orderId: orderId}, { $set: {cancelledTime: new Date()} });
+          }).run();
           if(callback) callback(true);
         }
         else {
-          console.log("cancel order failed: ", cancelExecutionReport.errorCode);
+          console.log("cancel order failed: ", cancelExecutionReport); //.errorCode
           if(callback) callback(false);
         }
       }
@@ -230,11 +245,7 @@ BackLayQueue = {
     // cancel the order
     TestBot.cancelOrders(
       {
-        marketId: marketId,
-        instructions: [{
-          //betId: betId,
-          //sizeReduction can be use in case of partial cancel.
-        }]
+        marketId: marketId
       },
       function(err,res){
         if(err){
@@ -245,9 +256,13 @@ BackLayQueue = {
         if(cancelExecutionReport.status == "SUCCESS"){
           // ok, the order was canceled!
           console.log("All orders were canceled for Market: " + marketId);
+          if(BackLayQueue.pendingOrders.length==0) return;
           _.each(BackLayQueue.pendingOrders,function(orderId,index){
             if(orderId.split('+')[0]==marketId){
               BackLayQueue.pendingOrders.splice(index, 1); // remove it
+              Fiber(function(){
+                Orders.update({orderId: orderId}, { $set: {cancelledTime: new Date()} });
+              }).run();
             }
           });
         }
@@ -270,6 +285,9 @@ BackLayQueue = {
         else {
           console.log("All Pending Orders were Canceled!!");
           BackLayQueue.pendingOrders = [];
+          Fiber(function(){
+            Orders.update({}, { $set: {cancelledTime: new Date()} });
+          }).run();
         }
       }
     );

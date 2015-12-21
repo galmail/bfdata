@@ -82,6 +82,16 @@ Meteor.methods({
   cancelAllOrders: function(){
     BackLayQueue.cancelAllOrders();
     return true;
+  },
+
+  startQueue: function(marketId){
+    BackLayQueue.start(marketId);
+    return true;
+  },
+
+  stopQueue: function(marketId){
+    BackLayQueue.stop(marketId,true);
+    return true;
   }
 
 });

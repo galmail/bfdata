@@ -1,0 +1,35 @@
+<template name="orders">
+  {{> navbar orders="active"}}
+	<div class="container orders">
+    <label class="title">Orders: MarketId={{marketId}} betDelay={{betDelay}}</label>
+
+    <div class="buttons right-buttons">
+    	<button id="startQueue" type="button" class="btn btn-primary">Start Queue</button>
+    	<button id="stopQueue" type="button" class="btn btn-warning">Stop Queue</button>
+    	<button id="cancelAllOrders" type="button" class="btn btn-danger">Cancel All Orders</button>
+    </div>
+
+    <table class="table table-hover">
+	    <thead>
+	      <tr>
+	      	<th>PlacedTime</th>
+	        <th>CancelledTime</th>
+	        <th>Side</th>
+	        <th>Price</th>
+	        <th>Market</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	    	{{#each orders}}
+	      <tr>
+		      <td>{{ placedTime }}</td>
+		      <td>{{ duration }}</td>
+		      <td>{{ side }}</td>
+		      <td>{{ price }}</td>
+		      <td>{{ marketId }}</td>
+		    </tr>
+	      {{/each}}
+	    </tbody>
+	  </table>
+  </div>
+</template>

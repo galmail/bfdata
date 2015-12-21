@@ -7,7 +7,7 @@ _.defaults(Meteor.settings, {
   // betfair settings
   bf: {
     virtualTrading: true,
-    testBot: {
+    testBot2: {
       appKey: "8GM3PavYlsoCq5Pm",
       username: "guli@tocarta.es",
       password: "guliguli1"

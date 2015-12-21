@@ -69,7 +69,8 @@ Strategy1 = {
 
     if(entryPrice >= Strategy1.settings.tradeMinEntryPrice && entryPrice <= Strategy1.settings.tradeMaxEntryPrice && !Meteor.settings.bf.virtualTrading){
       if(!updatedMarket.isHot){
-        BackLayQueue.start(updatedMarket._id,tradeId);
+        Trades.update({_id: tradeId},{ $set: { status: "BackLayQueue Not Started", result: "neutral", tradingEndTime: new Date() } });
+        BackLayQueue.start(updatedMarket._id);
       }
       else {
         BackLayQueue.openTrade(updatedMarket._id,tradeId);
