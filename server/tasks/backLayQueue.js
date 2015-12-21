@@ -287,17 +287,9 @@ BackLayQueue = {
 
 
 
-  // check if both back/lay orders of this market were matched.
-  // if none were matched, cancel the trade.
-  // if only one were matched, try to abort the trade with a small loss.
-  abortTrade: function(marketId,reason){
-    
-    
-  },
-
   // check if both back/lay orders of this market were matched,
   // if none were matched, cancel the trade.
-  // if only one were matched, try to break-even.
+  // if only one were matched, try to break-even or abort with a small loss.
   recoverTrade: function(marketId,tradeId,breakeven){
     BackLayQueue.cancelTrade(marketId,tradeId,function(orderIds,matchedOrders){
       if(matchedOrders.length==1 && orderIds.length==2){
@@ -311,7 +303,7 @@ BackLayQueue = {
         
         var recoverFn = function(ok){
           if(!ok) return;
-          var breakevenOrder = null;
+          var recoverOrder = null;
           var matchedOrder = matchedOrders[0];
           for(var i=BackLayQueue.pendingOrders.length-1;i>=0;i--){
             if(BackLayQueue.pendingOrders[i].split('+')[0]==marketId){
@@ -319,22 +311,33 @@ BackLayQueue = {
               var orderInfo = orderId.split('-')[1];
               var action = orderInfo[0];
               var price = parseFloat(orderInfo.replace(orderInfo[0],""));
-              
               if(breakeven){
                 if(action!=matchedOrder.side[0].toLowerCase() && price==matchedOrder.price){
-                  breakevenOrder = BackLayQueue.pendingOrders[i];
+                  recoverOrder = BackLayQueue.pendingOrders[i];
                   break;
                 }
               }
-
+              else {
+                // price should be less than the matched order
+                if(action!=matchedOrder.side[0].toLowerCase()){
+                  if(matchedOrder=="BACK" && matchedOrder.price==parseFloat(price-0.01).toFixed(2)){
+                    recoverOrder = BackLayQueue.pendingOrders[i];
+                    break;
+                  }
+                  else if(matchedOrder=="LAY" && matchedOrder.price==parseFloat(price+0.01).toFixed(2)){
+                    recoverOrder = BackLayQueue.pendingOrders[i];
+                    break;
+                  }
+                }
+              }
             }
           }
-          if(breakevenOrder==null){
-            console.log("Couldnt find a pending order to breakeven..");
+          if(recoverOrder==null){
+            console.log("Couldnt find a pending order to recover..");
             return;
           }
-          BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(breakevenOrder), 1);
-          BackLayQueue.placedOrders.splice(0, 0, breakevenOrder);
+          BackLayQueue.pendingOrders.splice(BackLayQueue.pendingOrders.indexOf(recoverOrder), 1);
+          BackLayQueue.placedOrders.splice(0, 0, recoverOrder);
         };
 
         _.each(orderIds,function(orderId){
@@ -411,23 +414,32 @@ BackLayQueue = {
           }
         });
 
-        if(matchedOrders.length==2){
-          // both orders were matched, update trade and market.
-          console.log("Trade Success!!!");
+        if(matchedOrders.length==orderIds.length){
+          // all orders were matched, update trade and market.
+          console.log("Trade Finished!!!");
           _.each(orderIds,function(orderId){
             BackLayQueue.placedOrders.splice(BackLayQueue.placedOrders.indexOf(orderId), 1);
           });
-          Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: "success", status: "success" } });
+
+
+          var trade = Trades.findOne({_id: tradeId});
+          var result = null;
+          if(trade.backOrder.price > trade.layOrder.price){
+            result = "success";
+          }
+          else if(trade.backOrder.price == trade.layOrder.price){
+            result = "neutral";
+          }
+          else {
+            result = "failure";
+          }
+
+          Trades.update({_id: tradeId},{ $set: { tradingEndTime: new Date(), result: result } });
           Markets.update({_id: marketId},{ $set: { tradingInProgress: false } });
         }
         if(callback) callback(orderIds,matchedOrders);
       }
     );
-  },
-
-  // adjust profit if partially matched, squeezing profit to 1%
-  adjustTrade: function(marketId){
-    //TODO: implement this function in the future
   }
 
 

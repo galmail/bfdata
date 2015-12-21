@@ -35,7 +35,7 @@ Strategy1 = {
 		console.log("All signals are green!");
     updatedMarket.tradingStartTime = new Date();
     var entryPrice = parseFloat(updatedMarket.bestToBack + 0.01).toFixed(2);
-    var exitPrice = parseFloat(updatedMarket.bestToLay - 0.01).toFixed(2);
+    var exitPrice = parseFloat(updatedMarket.bestToLay - 0.01).toFixed(2); //FIX: was updatedMarket.bestToBack
 
     // Create Trade Object.
     var tradeId = Trades.insert({
@@ -95,21 +95,25 @@ Strategy1 = {
     // if market closed or suspended, mark trade as a failure and cancel/dutch the trade
     if(market.status == "CLOSED" || market.status == "SUSPENDED"){
       console.log("Closed/Suspended Market: " + market.name);
-      BackLayQueue.abortTrade(market._id,"Market "+market.status);
+      Trades.update({_id: market.tradeId},{$set: { marketSuspended: true, status: "Market Suspended" } });
+      BackLayQueue.recoverTrade(market._id,trade._id);
     }
     // after 5sec, trade time expired, mark trade as a failure and cancel/dutch the trade
     else if(new Date() - trade.tradingStartTime >= Strategy1.settings.tradeExpiryTime){
       console.log("Trade Expired on Market: " + market.name);
-      BackLayQueue.abortTrade(market._id,"Trade Expired");
+      Trades.update({_id: market.tradeId},{$set: { status: "tradeExpiryTime" } });
+      BackLayQueue.recoverTrade(market._id,trade._id);
     }
     // after 3sec try to break-even
     else if(new Date() - trade.tradingStartTime >= Strategy1.settings.partialTradeExpiryTime){
       console.log("Looking to Break-even Trade on Market: " + market.name);
-      BackLayQueue.breakEvenTrade(market._id,market.tradeId);
+      Trades.update({_id: market.tradeId},{$set: { status: "partialTradeExpiryTime" } });
+      BackLayQueue.recoverTrade(market._id,trade._id,true);
     }
     // after 2sec try to cancel trade if none were matched
     else if(new Date() - trade.tradingStartTime >= Strategy1.settings.unmatchedTradeExpiryTime){
       console.log("Looking to Cancel Trade on Market: " + market.name);
+      Trades.update({_id: market.tradeId},{$set: { status: "unmatchedTradeExpiryTime" } });
       BackLayQueue.cancelTrade(market._id,market.tradeId);
     }
     else {
