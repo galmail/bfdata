@@ -7,6 +7,7 @@ _.defaults(Meteor.settings, {
   // betfair settings
   bf: {
     virtualTrading: true,
+    updateMarketInterval: 500,
     testBot2: {
       appKey: "8GM3PavYlsoCq5Pm",
       username: "guli@tocarta.es",

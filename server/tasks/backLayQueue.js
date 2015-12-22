@@ -8,19 +8,18 @@ BackLayQueue = {
   pendingOrders: [],         // where all the pending orders will be stored
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
+  safetyCancelTime: 1000,    // an order will get canceled 1000ms before the betDelay.
 
   start: function(marketId){
     var backLay = function(marketId){
-
-      console.log("pending orders: " + BackLayQueue.pendingOrders.length);
 
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
       if(market==null || !market.isHot) return;
 
-      if(new Date() - market.backLayStartTime >= (1000*market.betDelay - BackLayQueue.placeOrderFrecuency)){
-        BackLayQueue.cancelFirstBatchPendingOrders(marketId);
-      }
+      // if(new Date() - market.backLayStartTime >= (1000*market.betDelay - BackLayQueue.placeOrderFrecuency)){
+      //   BackLayQueue.cancelFirstBatchPendingOrders(marketId);
+      // }
 
       var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay;
       var overPrice = parseFloat(price + 0.20).toFixed(2); //FIX: should be 0.01
@@ -30,8 +29,10 @@ BackLayQueue = {
       var batchId = marketId + '+' + new Date().getTime();
       // for now, only back and lay on the under market.
       var selectionId = market.runners[0].selectionId;
+
+      var autoCancelTime = 1000*parseInt(market.betDelay) - BackLayQueue.safetyCancelTime;
       
-      BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId);
+      BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId,autoCancelTime);
       //BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
@@ -62,12 +63,12 @@ BackLayQueue = {
       Markets.update({_id: marketId},{ $set: { isHot: false, backLayStarted: false }});
     }
     
-    BackLayQueue.cancelAllPendingOrders(marketId);
+    // BackLayQueue.cancelAllPendingOrders(marketId);
 
-    var clearOrdersFn = Meteor.setInterval(function(){
-      BackLayQueue.cancelAllPendingOrders(marketId);
-      if(BackLayQueue.pendingOrders.length==0) Meteor.clearInterval(clearOrdersFn);
-    },BackLayQueue.placeOrderFrecuency);
+    // var clearOrdersFn = Meteor.setInterval(function(){
+    //   BackLayQueue.cancelAllPendingOrders(marketId);
+    //   if(BackLayQueue.pendingOrders.length==0) Meteor.clearInterval(clearOrdersFn);
+    // },BackLayQueue.placeOrderFrecuency);
 
   },
 
@@ -142,7 +143,7 @@ BackLayQueue = {
     }
   },
 
-  placeOrder: function(batchId,marketId,action,price,selectionId){
+  placeOrder: function(batchId,marketId,action,price,selectionId,autoCancelTime){
     // place order and insert into pending orders if order placed OK
     var orderId = batchId + '-' + action[0] + price;
     var createdAt = new Date();
@@ -182,6 +183,11 @@ BackLayQueue = {
 
         Fiber(function(){
           Orders.insert({ orderId: orderId, createdAt: createdAt, placedTime: new Date(), side: action, price: price, marketId: marketId});
+          if(autoCancelTime){
+            Meteor.setTimeout(function(){
+              BackLayQueue.cancelOrder(marketId,orderId);
+            },autoCancelTime);
+          }
         }).run();
       }
     );    

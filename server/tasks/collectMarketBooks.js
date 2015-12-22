@@ -4,7 +4,6 @@ global.intervalMB = [];
 
 runCollectMarketBooks = function(bot,eventId,stop){
   console.log("Collecting Market Books for EventId: " + eventId);
-  var updateMarketBooksInterval = 500; // update every 200ms
   var myevent = Events.findOne({id: eventId});
   if(myevent==null) return;
   if(stop){
@@ -33,6 +32,7 @@ runCollectMarketBooks = function(bot,eventId,stop){
 
   var updateMarketBooks = function(callback){
     console.log("Updating Market Books for EventId: " + eventId);
+    var refreshTime = new Date();
     bot.listMarketBook(
       {
         currencyCode: "GBP",
@@ -58,6 +58,7 @@ runCollectMarketBooks = function(bot,eventId,stop){
             var market = Markets.findOne({_id: marketBook.marketId});
             if(market==null) return;
             marketBook.lastMatchTime = new Date(marketBook.lastMatchTime);
+            marketBook.serverResponseTime = new Date() - refreshTime;
             Strategy1.trade(_.extend(market, marketBook));
             done();
           }).run();
@@ -71,7 +72,7 @@ runCollectMarketBooks = function(bot,eventId,stop){
     if(global.intervalMB[myevent.id]==1){
       Meteor.setTimeout(function(){
         updateMarketBooks(repeater);
-      },updateMarketBooksInterval);
+      },Meteor.settings.bf.updateMarketInterval);
     }
   };
 
