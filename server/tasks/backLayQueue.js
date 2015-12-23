@@ -4,7 +4,7 @@ BackLayQueue = {
 
   amount: 2,                 // use 2 pounds as fixed amount for each order
   placeOrderFrecuency: 1000, // place new order every 2000ms
-  ordersBatchSize: 2,        // place 2 orders at the same time
+  ordersBatchSize: 1,        // place 2 orders at the same time
   pendingOrders: [],         // where all the pending orders will be stored
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
@@ -31,7 +31,7 @@ BackLayQueue = {
       //   BackLayQueue.cancelFirstBatchPendingOrders(marketId);
       // }
 
-      var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay + 0.20;
+      var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay + 0.20; //FIX: remove 0.20
       var overPrice = parseFloat(price + 0.20).toFixed(2); //FIX: should be 0.01
       var underPrice = parseFloat(price - 0.20).toFixed(2); //FIX: should be 0.01
       
@@ -42,18 +42,18 @@ BackLayQueue = {
 
       var autoCancelTime = 1000*parseInt(market.betDelay) - BackLayQueue.safetyCancelTime;
       
-      // var ordersPlaced = 0;
-      // var orderPlacedFn = function(){
-      //   ordersPlaced++;
-      //   if(ordersPlaced==BackLayQueue.ordersBatchSize){
-      //     Meteor.setTimeout(function(){
-      //       backLay(marketId);
-      //     },BackLayQueue.placeOrderFrecuency);
-      //   }
-      // };
+      var ordersPlaced = 0;
+      var orderPlacedFn = function(){
+        ordersPlaced++;
+        if(ordersPlaced==BackLayQueue.ordersBatchSize){
+          Meteor.setTimeout(function(){
+            backLay(marketId);
+          },BackLayQueue.placeOrderFrecuency);
+        }
+      };
 
-      BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId,autoCancelTime);
-      BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId,autoCancelTime);
+      BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId,autoCancelTime,orderPlacedFn);
+      //BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId,autoCancelTime);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
 
@@ -61,9 +61,9 @@ BackLayQueue = {
       //BackLayQueue.placeOrder(batchId,marketId,"back",underPrice,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",overPrice,selectionId);
 
-      Meteor.setTimeout(function(){
-        backLay(marketId);
-      },BackLayQueue.placeOrderFrecuency);
+      // Meteor.setTimeout(function(){
+      //   backLay(marketId);
+      // },BackLayQueue.placeOrderFrecuency);
       
     };
 
