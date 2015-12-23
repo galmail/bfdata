@@ -82,6 +82,19 @@ if (Meteor.isServer) {
           if(callback) callback(true);
         }
       });
+
+      TestBot2 = Betfair.newSession(Meteor.settings.bf.testBot2.appKey);
+      TestBot2.login(Meteor.settings.bf.testBot2.username,Meteor.settings.bf.testBot2.password, function(err){
+        if(err){
+          console.log("TestBot2 not logged!");
+          if(callback) callback(false);
+        }
+        else {
+          console.log("TestBot2 is Ready!");
+          if(callback) callback(true);
+        }
+      });
+
     };
 
     loadTestBot();

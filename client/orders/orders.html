@@ -1,7 +1,7 @@
 <template name="orders">
   {{> navbar orders="active"}}
 	<div class="container orders">
-    <label class="title">Orders: MarketId={{marketId}} betDelay={{betDelay}}sec</label>
+    <label class="title">marketId={{marketId}} betDelay={{betDelay}}sec responseTime={{serverResponseTime}}ms</label>
 
     <div class="buttons right-buttons">
     	<button id="startQueue" type="button" class="btn btn-primary">Start Queue</button>

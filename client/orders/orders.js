@@ -11,6 +11,11 @@ Template.orders.helpers({
   betDelay: function(){
   	var market = Markets.findOne({_id: Session.get("marketId")});
   	if(market) return market.betDelay;
+  },
+
+  serverResponseTime: function(){
+  	var market = Markets.findOne({_id: Session.get("marketId")});
+  	if(market) return market.serverResponseTime;
   }
 
 

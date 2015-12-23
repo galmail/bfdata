@@ -21,7 +21,7 @@ Meteor.methods({
   },
 
   loadUpcomingMatches: function(eventId){
-    runCollectEvents(TestBot);
+    runCollectEvents(TestBot2);
     return true;
   },
 
@@ -64,13 +64,13 @@ Meteor.methods({
   },
 
   readMarketBooks: function(eventId){
-    runCollectMarketBooks(TestBot,eventId);
+    runCollectMarketBooks(TestBot2,eventId);
     return true;
   },
 
   // To stop getting the market books of that event
   stopReadingFromMarketBooks: function(eventId){
-    runCollectMarketBooks(TestBot,eventId,true);
+    runCollectMarketBooks(TestBot2,eventId,true);
     return true;
   },
 

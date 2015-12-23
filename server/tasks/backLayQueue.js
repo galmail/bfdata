@@ -3,25 +3,35 @@
 BackLayQueue = {
 
   amount: 2,                 // use 2 pounds as fixed amount for each order
-  placeOrderFrecuency: 2000, // place new order every 2000ms
-  ordersBatchSize: 6,        // place 6 orders at the same time
+  placeOrderFrecuency: 1000, // place new order every 2000ms
+  ordersBatchSize: 2,        // place 2 orders at the same time
   pendingOrders: [],         // where all the pending orders will be stored
   placedOrders: [],          // where all the placed orders will be stored
   priceDecay: 0.01,          // assuming the price will drop 0.01 in the next 5sec
   safetyCancelTime: 1000,    // an order will get canceled 1000ms before the betDelay.
+  maxResponseTime: 500,      // stop the queue if server response is slow. (worse than 500ms)
 
   start: function(marketId){
     var backLay = function(marketId){
+
+      // remove all old orders...
+      var twentySecAgo = new Date(new Date().getTime() - 20000);
+      Orders.remove({placedTime: {$lte: twentySecAgo}, cancelledTime: { $exists: true } });
 
       //stop the queue if market is not hot
       var market = Markets.findOne({_id: marketId});
       if(market==null || !market.isHot) return;
 
+      if(market.serverResponseTime > BackLayQueue.maxResponseTime){
+        console.log("Server response is slow ("+ market.serverResponseTime +"ms) ...stopping queue.");
+        return;
+      }
+
       // if(new Date() - market.backLayStartTime >= (1000*market.betDelay - BackLayQueue.placeOrderFrecuency)){
       //   BackLayQueue.cancelFirstBatchPendingOrders(marketId);
       // }
 
-      var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay;
+      var price = parseFloat(market.lastPriceTraded).toFixed(2) - BackLayQueue.priceDecay + 0.20;
       var overPrice = parseFloat(price + 0.20).toFixed(2); //FIX: should be 0.01
       var underPrice = parseFloat(price - 0.20).toFixed(2); //FIX: should be 0.01
       
@@ -32,18 +42,29 @@ BackLayQueue = {
 
       var autoCancelTime = 1000*parseInt(market.betDelay) - BackLayQueue.safetyCancelTime;
       
+      // var ordersPlaced = 0;
+      // var orderPlacedFn = function(){
+      //   ordersPlaced++;
+      //   if(ordersPlaced==BackLayQueue.ordersBatchSize){
+      //     Meteor.setTimeout(function(){
+      //       backLay(marketId);
+      //     },BackLayQueue.placeOrderFrecuency);
+      //   }
+      // };
+
       BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId,autoCancelTime);
-      //BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId);
+      BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId,autoCancelTime);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
 
       // This two are only used to exit the trade, in case things go wrong.
       //BackLayQueue.placeOrder(batchId,marketId,"back",underPrice,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",overPrice,selectionId);
-      
+
       Meteor.setTimeout(function(){
         backLay(marketId);
       },BackLayQueue.placeOrderFrecuency);
+      
     };
 
     var market = Markets.findOne({_id: marketId});
@@ -143,10 +164,11 @@ BackLayQueue = {
     }
   },
 
-  placeOrder: function(batchId,marketId,action,price,selectionId,autoCancelTime){
+  placeOrder: function(batchId,marketId,action,price,selectionId,autoCancelTime,callback){
     // place order and insert into pending orders if order placed OK
     var orderId = batchId + '-' + action[0] + price;
-    var createdAt = new Date();
+    
+    Orders.insert({ orderId: orderId, createdAt: new Date(), marketId: marketId });
 
     TestBot.placeOrders(
       {
@@ -167,13 +189,15 @@ BackLayQueue = {
       function(err,res){
         if(err){
           console.log("ERROR: ",err);
-          return false;
+          if(callback) return callback(false);
+          else return false;
         }
         var placeExecutionReport = res.response.result;
         if(placeExecutionReport.status != "SUCCESS"){
           console.log("Order Not Placed: ", placeExecutionReport.errorCode);
           //TODO: order was not placed OK, DO SOMETHING!!
-          return;
+          if(callback) return callback(false);
+          else return false;
         }
         // order placed ok, save betId.
         var betId = placeExecutionReport.instructionReports[0].betId;
@@ -182,13 +206,18 @@ BackLayQueue = {
         BackLayQueue.pendingOrders.splice(0, 0, orderId);
 
         Fiber(function(){
-          Orders.insert({ orderId: orderId, createdAt: createdAt, placedTime: new Date(), side: action, price: price, marketId: marketId});
+          Orders.update({orderId: orderId.split("::")[0]},{$set:{ orderId: orderId, placedTime: new Date(), side: action, price: price }});
           if(autoCancelTime){
+            var market = Markets.findOne({_id: marketId});
+            autoCancelTime -= market.serverResponseTime;
+            if(autoCancelTime<0) autoCancelTime=0;
             Meteor.setTimeout(function(){
               BackLayQueue.cancelOrder(marketId,orderId);
             },autoCancelTime);
           }
+          if(callback) return callback(true);
         }).run();
+
       }
     );    
   },
