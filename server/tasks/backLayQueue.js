@@ -36,7 +36,7 @@ BackLayQueue = {
       var underPrice = parseFloat(price - 0.20).toFixed(2); //FIX: should be 0.01
       
       //if(BackLayQueue.ordersBatchSize != 6) return;
-      var batchId = marketId + '+' + new Date().getTime();
+      //var batchId = marketId + '+' + new Date().getTime();
       // for now, only back and lay on the under market.
       var selectionId = market.runners[0].selectionId;
 
@@ -52,7 +52,7 @@ BackLayQueue = {
         }
       };
 
-      BackLayQueue.placeOrder(batchId,marketId,"back",overPrice,selectionId,autoCancelTime,orderPlacedFn);
+      BackLayQueue.placeOrder(marketId,"back",overPrice,selectionId,autoCancelTime,orderPlacedFn);
       //BackLayQueue.placeOrder(batchId,marketId,"back",price,selectionId,autoCancelTime);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",price,selectionId);
       //BackLayQueue.placeOrder(batchId,marketId,"lay",underPrice,selectionId);
@@ -164,8 +164,9 @@ BackLayQueue = {
     }
   },
 
-  placeOrder: function(batchId,marketId,action,price,selectionId,autoCancelTime,callback){
+  placeOrder: function(marketId,action,price,selectionId,autoCancelTime,callback){
     // place order and insert into pending orders if order placed OK
+    var batchId = marketId + '+' + new Date().getTime();
     var orderId = batchId + '-' + action[0] + price;
     
     Orders.insert({ orderId: orderId, createdAt: new Date(), marketId: marketId });

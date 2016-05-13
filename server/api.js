@@ -92,6 +92,20 @@ Meteor.methods({
   stopQueue: function(marketId){
     BackLayQueue.stop(marketId,true);
     return true;
+  },
+
+  placeOrder: function(marketId,selectionId,price){
+    BackLayQueue.placeOrder(marketId,"back",price,selectionId);
+    return true;
+  },
+
+  startVirtualSports: function(){
+    virtualSportsAgent.login();
+    return { res: "success" };
   }
+
+
+
+
 
 });
