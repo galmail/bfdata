@@ -1,3 +1,4 @@
 cert
 .meteor/local
 server/_settings.js
+main_settings.js
