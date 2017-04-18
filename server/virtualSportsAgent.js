@@ -73,27 +73,85 @@ virtualSportsAgent.login = function(){
 			};
 
 			virtualSportsAgent.steps = [
+			  
+
+				////////// Step 1 - Open Virtual Sports Page //////////
+
 			  function() {
-			    //Load Login Page
 			    console.log("opening page: " + virtualSportsAgent.url);
 			    page.open(virtualSportsAgent.url);
-			    //virtualSportsAgent.parsePage(page,virtualSportsAgent.url);
 			  },
-			  function() {
-			    //Enter Credentials
 
-			    page.evaluate(function() {
-			      document.getElementById("ssc-liu").value="myusername";
-			      document.getElementById("ssc-lipw").value="mypassword";
-			    });
-			  },
+			  ////////// Step 2 - Login //////////
+
 			  function() {
-			    //Login
 			    page.evaluate(function() {
+			      document.getElementById("ssc-liu").value="guliox";
+			      document.getElementById("ssc-lipw").value="Na0mi2oo7";
 			      var theForm = document.getElementsByClassName("ssc-lif")[0];
 			      theForm.submit();
 			    });
-			  }, 
+			  },
+
+			  ////////// Step 3 - Get Cookie and Fetch Upcoming Events //////////
+
+			  function() {
+			    page.evaluate(function() {
+			      var result = "";
+			      if(document.getElementsByClassName("ssc-un").length>0) result = document.cookie;
+			      return result;
+			    }, function(cookie){
+
+			    	if(cookie==""){
+			    		console.log("not logged.");
+			    		return;
+			    	}
+			    	var xsrftokenStr = cookie.match(/xsrftoken=[a-z0-9-]+/g)[0];
+						var virtualUrl = "https://www.betfair.com/sport/virtuals/football?modules=virtuals-marketview&openDate=1463706240000&action=virtualMarketViewNextEvents&lastId=1044&ts=1463705310646&alt=json&"+xsrftokenStr;
+
+						console.log(virtualUrl);
+						console.log(cookie);
+
+			    	Fiber(function(){
+			    	try {
+				    	var getUpcomingEvents = HTTP.call("GET",virtualUrl,{
+				    		headers: {
+				    			//"Access-Control-Allow-Headers": "X-Requested-With",
+				    			"X-Requested-With": "XMLHttpRequest",
+				    			"Accept": "*/*",
+									"Cookie": cookie
+				    		}
+				    	});
+				    	console.log("getUpcomingEvents.statusCode: ", getUpcomingEvents.statusCode);
+				    	
+				    	console.log(getUpcomingEvents.content.indexOf('{"page":{"config"'));
+
+				    	//console.log("getUpcomingEvents.content: ", getUpcomingEvents.content);
+
+				    	if(getUpcomingEvents.statusCode != 200) return;
+
+				    } catch (e) {
+					    // Got a network error, time-out or HTTP error in the 400 or 500 range.
+					    console.log("error",e);
+					  }
+					  }).run();
+			    });
+
+			  },
+
+
+
+
+
+
+
+
+
+
+
+
+			  ////////// Step 4 - Place Bets //////////
+
 			  function() {
       		page.evaluate(function() {
       			var result = "";
@@ -124,15 +182,6 @@ virtualSportsAgent.login = function(){
 		    		
 		    		return result;
 
-		    		// if(document.querySelector(".betslip-body button.place-bets-button")==null) return "c1";
-		    		// var submitBtn = document.querySelector(".betslip-body button.place-bets-button");
-		    		// if(submitBtn.className.indexOf("ui-disabled")>0) submitBtn.classList.remove("ui-disabled");
-		    		// submitBtn.click();
-
-
-
-
-			    	//return "logged";
 			    },function(result){
 
 			    	console.log(result);
@@ -195,44 +244,27 @@ virtualSportsAgent.login = function(){
 					    console.log("error",e);
 					  }
 					  }).run();
-
-
-
-
-
-			    	
-
-			    	//Fiber(function(){
-				    //}).run();
-			   		
-
-
-
-
-
-
-			   		//  	var server = "https://www.betfair.com/sport/place-bet?redirectPath=/virtuals/football&action=confirm&modules=betslip&bsContext=VIRTUAL&"+token;
-			   		//  	page.open(server, 'post', data, function (status) {
-						//     if (status !== 'success') {
-						//         console.log('Unable to post!');
-						//     } else {
-						//         console.log(page.content);
-						//     }
-						//     phantom.exit();
-						// });
-
-
-
-			    	// Fiber(function(){
-			     //  	TraceLogs.insert({date: new Date(), doc: res});
-			     //  }).run();
 			    });
 			  },
+
+
+
+
+
+
+
 			  function() {
       		page.evaluate(function() {
 
       		});
       	}
+
+
+
+
+
+
+
 			];
 
 

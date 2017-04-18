@@ -1,0 +1,78 @@
+.strategy1 {
+
+	.match-select {
+		width: 30%;
+		display: inline-block;
+	}
+
+	.match-label {
+		margin-right: 5px;
+	}
+
+	.gameaction-label {
+    margin-left: 10px;
+    margin-right: 5px;
+	}
+
+	.gameaction-value {
+		font-weight: normal;
+		background-color: transparent;
+    padding: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+    width: 300px;
+    &.safe-game {
+    	background-color: lightgreen;
+    }
+    &.danger-game {
+    	background-color: red;
+    }
+	}
+
+	.gamescore-label {
+    margin-left: 10px;
+    margin-right: 5px;
+	}
+
+	.gamescore-value {
+		font-weight: normal;
+	}
+
+	.betdelay-label {
+    margin-left: 10px;
+    margin-right: 5px;
+	}
+
+	.betdelay-value {
+		font-weight: normal;
+	}
+
+	.serverresponse-label {
+    margin-left: 10px;
+    margin-right: 5px;
+	}
+
+	.serverresponse-value {
+		font-weight: normal;
+	}
+
+
+	.markets-label {
+		margin-right: 10px;
+    margin-left: 10px;
+	}
+
+	.radio-inline {
+		border: 1px solid;
+    padding: 5px 30px;
+    border-radius: 5px;
+	}
+
+	.signals-table {
+    margin-top: 20px;
+    th {
+    	width: 33%;
+    }
+	}
+
+}

@@ -21,6 +21,7 @@ Router.route('/dashboard', function(){
 });
 
 // Other Routes
+Router.route('/strategy1');
 Router.route('/bots');
 Router.route('/test');
 Router.route('/logs');

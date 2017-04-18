@@ -1,0 +1,187 @@
+<template name="strategy1">
+	{{> navbar strategy1="active"}}
+	<div class="container strategy1">
+
+		<h3>Strategy1</h3>
+		
+		<div>
+
+			<label class="match-label">Match:</label>
+			<select class="form-control match-select" id="matchSelect">
+				<option value="">----------</option>
+				{{#each inPlayMatches}}
+			    <option value="{{id}}">{{name}}</option>
+			  {{/each}}
+			</select>
+
+			<label class="gameaction-label">Action:</label>
+			<label class="gameaction-value {{safeGameSignal}}">{{action}}</label>
+
+			<label class="gamescore-label">Score:</label>
+			<label class="gamescore-value">{{matchScore}}</label>
+
+			<label class="serverresponse-label">Server Response:</label>
+			<label class="serverresponse-value">{{serverResponseTime}}</label>
+
+			<label class="betdelay-label">Bet Delay:</label>
+			<label class="betdelay-value">{{betDelay}}</label>
+
+		</div>
+		
+		<table class="signals-table table table-bordered table-hover">
+			<thead>
+			<tr>
+				<th>Market</th>
+				<th>Current</th>
+				<th>Signal</th>
+			</tr>
+			</thead>
+			<tbody>
+
+			<tr>
+				<td>Home Team</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Away Team</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Draw</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 1.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 2.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 3.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 4.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 5.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+			<tr>
+				<td>Under 6.5</td>
+				<td>-----</td>
+				<td>-----</td>
+			</tr>
+
+
+
+			
+
+
+
+
+			<!--
+
+			<tr class="{{safeGameSignal}}">
+				<td>Hot Market</td>
+				<td>{{hotmarketname}}</td>
+				<td>Any market where odd is dropping fast</td>
+			</tr>
+
+			<tr class="{{safeGameSignal}}">
+				<td>Game Action</td>
+				<td>{{action}}</td>
+				<td>No goal in the next 3sec</td>
+			</tr>
+
+			<tr class="{{priceSignal}}">
+				<td>Last Price Traded</td>
+				<td>{{currentMarket.lastPriceTraded}}</td>
+				<td>Between 1.02 and 1.18</td>
+			</tr>
+			<tr class="{{lastTimeMinPriceSignal}}">
+				<td>MinPrice Recent</td>
+				<td>{{currentMarket.minPriceTraded}} - {{lastTimeMinPriceTraded}}sec ago</td>
+				<td>MinPrice traded in the last 3sec</td>
+			</tr>
+
+			<tr class="{{priceOscillationSignal}}">
+				<td>Price Oscillation</td>
+				<td>{{currentMarket.numPriceChanges}} changes</td>
+				<td>Price changed 2+ times in the last 2sec.</td>
+			</tr>
+
+			<tr class="{{maxSpreadSignal}}">
+				<td>Max Spread</td>
+				<td>Actual Spread: {{currentMarket.actualSpread}}</td>
+				<td>must be the minimum: 0.01</td>
+			</tr>
+
+			<tr class="info">
+				<td>Best Back/Lay Available</td>
+				<td>Back: {{currentMarket.bestToBack}} Lay: {{currentMarket.bestToLay}}</td>
+				<td>show the best available</td>
+			</tr>
+
+			-->
+
+			<!-- <tr class="{{priceDropSignal}}">
+				<td>Last Price Drop</td>
+				<td>Min Price: {{currentMarket.minPriceTraded}} - {{minPriceSince}}sec ago - Delta: {{minPriceDelta}}sec</td>
+				<td>Less than 8sec</td>
+			</tr>
+			<tr class="{{priceBounceSignal}}">
+				<td>Last Price Bounce Back</td>
+				<td>{{lastPriceBounce}}sec ago</td>
+				<td>less than 2sec</td>
+			</tr> -->
+
+			</tbody>
+		</table>
+
+		<h3>Trades</h3>
+
+		<table class="table table-bordered table-hover">
+			<thead>
+			<tr>
+				<th>Time</th>
+				<th>MarketId</th>
+				<th>Max/Min Prices Traded</th>
+				<th>Entry/Exit Point Prices</th>
+			</tr>
+			</thead>
+			<tbody>
+			{{#each trade}}
+				<tr class="{{result}}">
+					<td>{{tradingStartTime}}</td>
+					<td>{{marketId}}</td>
+					<td>{{maxPriceTraded}} / {{minPriceTraded}}</td>
+					<td>{{tradingStrategy.entryPoint.price}} / {{tradingStrategy.exitPoint.price}}</td>
+				</tr>
+      {{/each}}
+			</tbody>
+		</table>
+
+
+
+	</div>
+</template>
